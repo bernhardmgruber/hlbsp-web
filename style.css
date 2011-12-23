@@ -1,0 +1,32 @@
+canvas {
+	display: block;
+	-webkit-box-shadow: 0 0 10px rgba(0,0,0, 0.8);
+	-moz-box-shadow: 0 0 10px rgba(0,0,0, 0.8);
+	box-shadow: 0 0 10px rgba(0,0,0, 0.8);
+	margin: auto;
+	border: 1px solid white;
+}
+
+table, th, td {
+	border: 1px solid black;
+}
+
+table {
+	border-collapse:collapse;
+}
+
+.normal td {
+	background: lightgrey;
+}
+
+.success td {
+	background: green;
+}
+
+.warning td {
+	background: yellow;
+}
+
+.error td {
+	background: red;
+}

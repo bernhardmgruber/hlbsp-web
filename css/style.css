@@ -1,10 +1,73 @@
+body {
+	font-family: sans-serif;
+	font-height: 8px;
+	text-align: center;
+}
+
+h1 {
+	text-shadow: 0 2px 2px rgba(0, 0, 0, 0.35);
+}
+
+#app {
+	margin: auto;
+}
+
 canvas {
-	display: block;
+	display: inline-block;
 	-webkit-box-shadow: 0 0 10px rgba(0,0,0, 0.8);
 	-moz-box-shadow: 0 0 10px rgba(0,0,0, 0.8);
 	box-shadow: 0 0 10px rgba(0,0,0, 0.8);
-	margin: auto;
 	border: 1px solid white;
+}
+
+#controlpanel {
+	display: inline-block;
+	vertical-align: top;  
+	margin: 0 0 0 20px;
+	padding: 0;
+	list-style: none;
+	text-align: left;
+}
+
+#controlpanel > li {
+	border: 1px solid black;
+	margin-bottom: 10px;
+	padding: 10px;
+	border-radius: 5px;
+	
+	background: rgb(252,255,244); /* Old browsers */
+	background: -moz-linear-gradient(top,  rgba(252,255,244,1) 0%, rgba(223,229,215,1) 40%, rgba(179,190,173,1) 100%); /* FF3.6+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,255,244,1)), color-stop(40%,rgba(223,229,215,1)), color-stop(100%,rgba(179,190,173,1))); /* Chrome,Safari4+ */
+	background: -webkit-linear-gradient(top,  rgba(252,255,244,1) 0%,rgba(223,229,215,1) 40%,rgba(179,190,173,1) 100%); /* Chrome10+,Safari5.1+ */
+	background: -o-linear-gradient(top,  rgba(252,255,244,1) 0%,rgba(223,229,215,1) 40%,rgba(179,190,173,1) 100%); /* Opera 11.10+ */
+	background: -ms-linear-gradient(top,  rgba(252,255,244,1) 0%,rgba(223,229,215,1) 40%,rgba(179,190,173,1) 100%); /* IE10+ */
+	background: linear-gradient(top,  rgba(252,255,244,1) 0%,rgba(223,229,215,1) 40%,rgba(179,190,173,1) 100%); /* W3C */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfff4', endColorstr='#b3bead',GradientType=0 ); /* IE6-9 */
+	
+	text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.35);
+}
+
+h2 {
+	margin: 0 0 5px 0;
+	font-size: 20px;
+}
+
+#info p {
+	display: inline;
+}
+
+#info img {
+	float: right;
+}
+
+#log > div {
+	height: 150px;
+	overflow-y: scroll;
+}
+
+p {
+	margin: 0;
+	padding: 2px;
 }
 
 table, th, td {
@@ -29,4 +92,8 @@ table {
 
 .error td {
 	background: red;
+}
+
+.clear {
+	clear: both;
 }

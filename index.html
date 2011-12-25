@@ -2,25 +2,52 @@
 <html>
 	<head>
 		<title>HLBSP viewer</title>
+		
 		<link rel="stylesheet" type="text/css" href="css/style.css">
+		
 		<script src="js/jquery-1.7.1.min.js"></script>
 		<script src="js/J3DIMath.js"></script>
 		
 		<script src="js/camera.js"></script>
+		<script src="js/wad.js"></script>
+		<script src="js/bsp.js"></script>
 		<script src="js/main.js"></script>
-
+		<script src="js/events.js"></script>
 	</head>
 	<body>
 		<h1>HLBSP viewer</h1>
 		
-		<canvas id="canvas" width="800" height="600">Your browser does not support canvas ;(</canvas>
+		<div id="app">
+			<canvas width="1024" height="768">Your browser does not support canvas ;(</canvas>
+			
+			<ul id="controlpanel">	
+				<li id="info">
+					<p>Starting renderer...</p>
+					<img src="images/webgl.png" alt="WebGL Logo">
+					<br class="clear">
+				</li>
+				<li id="bspselection">
+					<p>Please select a bsp file:</p>
+					<input type="file" id="bspfile"></input>
+				</li>
+				<li id="bsploading" style="display: none;">
+					<p></p>
+					<progress max="100"></progress>
+					<p></p>
+				</li>
+				<li id="log">
+					<h2>Log</h2>
+					<div>
+						<table id="log">
+							<tbody>
+								<tr><th>#</th><th>Time</th><th>Message</th></tr>
+							</tbody>
+						</table>
+					</div>
+				</li>
+			</ul>
+		</div>
 		
-		<h2>Log</h2>
-		<table id="log">
-			<tbody>
-				<tr><th>#</th><th>Time</th><th>Type</th><th>Message</th></tr>
-			</tbody>
-		</table>
 		<script id="shader-vs" type="x-shader/x-vertex">  
 			uniform mat4 mvMatrix;  
 			uniform mat4 pMatrix;  

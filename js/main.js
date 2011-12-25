@@ -4,8 +4,8 @@
 
 "use strict";
 
-// save the time of beginning execution
-var startTime = new Date();
+// stores the time of the beginning of execution
+var startTime;
 
 // global handle to the gl context
 var gl = null;  
@@ -51,9 +51,26 @@ function log(message, type)
 	
 	var currentTime = new Date()
 
-	var html = '<tr class=' + type + '><td>' + logcount + '</td><td>' + (currentTime.getTime() - startTime.getTime()) + 'ms' + '</td><td>' + type + '</td><td>' + message + '</td></tr>';
+	var html = '<tr class=' + type + '><td>' + logcount + '</td><td>' + (currentTime.getTime() - startTime.getTime()) + 'ms' + '</td><td>' + message + '</td></tr>';
 	
-	$('#log > tbody').append(html);
+	$('#log tbody').append(html);
+}
+
+/**
+ * Checks the support of necessary file reading APIs.
+ */
+function checkFileReaderAPI()
+{
+	if (window.File && window.FileReader && window.FileList && window.Blob)
+	{
+		log('FileReader API is supported', LogType.SUCCESS);
+		return true;
+	}
+	else
+	{
+		log('Sorry: Your browser does not support the FileReader API. No BSP files can be loaded!', LogType.ERROR);
+		return false;
+	}
 }
 
 /**
@@ -63,7 +80,7 @@ function initWebGL()
 {
 	var context;
 
-	canvas = $('#canvas')[0];
+	canvas = $('canvas')[0];
 
 	try
 	{  
@@ -358,7 +375,7 @@ function mainloop()
 		fps = fpsCounter;
 		fpsCounter = 0;
 		lastFpsUpdate = time;
-		log("FPS: " + fps);
+		$('#info p').text('Rendering at ' + fps + ' FPS');
 	}
 	
 	lastTime = time;
@@ -370,55 +387,16 @@ function mainloop()
 	render();
 	
 	// Start next frame
-	setTimeout('mainloop();', 100);
-}
-
-function setEventHandlers()
-{
-	/**
-	 * Event handler for updating the current key states on key press.
-	 */
-	document.onkeydown = function(event)
-	{
-		keys[event.keyCode] = true;
-	};
-
-	/**
-	 * Event handler for updating the current key states on key release.
-	 */
-	document.onkeyup = function(event)
-	{
-		keys[event.keyCode] = false;
-	};
-
-	/**
-	 * Event handler for updating the current mouse position in camera.
-	 */
-	document.onmousemove = function(event)
-	{
-		mouse.x = event.pageX;
-		mouse.y = event.pageY;
-	};
-
-	/**
-	 * Event handler for mouse down to enable mouse tracking.
-	 */
-	document.onmousedown = function()
-	{
-		camera.beginCapture();
-	}
-
-	/**
-	 * Event handler for mouse up to stop mouse tracking.
-	 */
-	document.onmouseup = function(event)
-	{
-		camera.endCapture();
-	}
+	setTimeout(mainloop, 0);
 }
 
 function main()
 {
+	startTime = new Date();
+	log('<< STARTUP >>');
+
+	if(!checkFileReaderAPI())
+		return;
 	if(!initWebGL())
 		return;
 	if(!initShaders())
@@ -430,8 +408,6 @@ function main()
 		
 	resize();
 	
-	setEventHandlers();
-	
 	camera.z = 0;
 	
 	log('Starting mainloop');
@@ -439,6 +415,6 @@ function main()
 }
 
 // GET THE BALL ROLLING
-window.onload = main;
+window.addEventListener('load', main, false);
 
 	

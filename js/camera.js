@@ -94,7 +94,7 @@ var camera = new function()
 
         var moveFactor = this.moveSens * interval;
 
-        if (keys[16]) // SHIFT - UP
+        if (keys[16] || keys[32]) // SHIFT or SPACE - UP
         {
             this.z += moveFactor;
         }

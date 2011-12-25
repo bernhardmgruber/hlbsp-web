@@ -25,6 +25,23 @@ var modelviewMatrix = new J3DIMatrix4();
 
 var canvas;
 
+/** Stores the global key states */
+var keys = new Array(256);
+
+for(var i = 0; i < 256; i++)
+	keys[i] = false;
+
+/** Current mouse position */
+var mouse =
+{
+	x : 0,
+	y : 0
+}
+
+// ================================================================================================
+// =                                          Functions                                           =
+// ================================================================================================
+
 function log(message, type)
 {
 	if(type == undefined)
@@ -131,7 +148,8 @@ function getShader(gl, id)
 	} 
 }
 
-var vertexPositionAttribute;
+var vertexPositionLocation;
+var vertexColorLocation;
 
 var projectionMatrixLocation;
 var modelviewMatrixLocation;
@@ -160,21 +178,39 @@ function initShaders()
 	log('Successfully linked shader program', LogType.SUCCESS);
     
 	// Get variable locations
-	vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");  
-	gl.enableVertexAttribArray(vertexPositionAttribute);  
-	
 	projectionMatrixLocation = gl.getUniformLocation(shaderProgram, 'pMatrix');
 	modelviewMatrixLocation = gl.getUniformLocation(shaderProgram, 'mvMatrix');
+	
+	vertexPositionLocation = gl.getAttribLocation(shaderProgram, "vertexPosition");  
+	gl.enableVertexAttribArray(vertexPositionLocation);  
+	
+	vertexColorLocation = gl.getAttribLocation(shaderProgram, "vertexColor");  
+	gl.enableVertexAttribArray(vertexColorLocation);  
+	
 	
 	return true;
 }  
 
-var squareVerticesBuffer;
+var square = 
+{
+	vertexBuffer : undefined,
+	colorBuffer : undefined
+};
+
+
+var coordSystem = 
+{
+	vertexBuffer : undefined,
+	colorBuffer : undefined
+};
 
 function initBuffers()
 {  
-	squareVerticesBuffer = gl.createBuffer();  
-	gl.bindBuffer(gl.ARRAY_BUFFER, squareVerticesBuffer);  
+	/**
+	 * Square
+	 */
+	square.vertexBuffer = gl.createBuffer();  
+	gl.bindBuffer(gl.ARRAY_BUFFER, square.vertexBuffer);  
 		
 	var vertices = [  
 		 1.0,  1.0, 0.0,  
@@ -184,6 +220,66 @@ function initBuffers()
 	];  
 		
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW); 
+	
+	square.colorBuffer = gl.createBuffer();  
+	gl.bindBuffer(gl.ARRAY_BUFFER, square.colorBuffer);  
+	
+	var colors = [  
+		1.0,  1.0,  1.0,  1.0,    // white  
+		1.0,  0.0,  0.0,  1.0,    // red  
+		0.0,  1.0,  0.0,  1.0,    // green  
+		0.0,  0.0,  1.0,  1.0     // blue  
+	  ]; 
+		
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW); 
+	
+	
+	/**
+	 * Coord system
+	 */
+	coordSystem.vertexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, coordSystem.vertexBuffer);
+	
+	var coordVertices =
+	[  
+		0.0, 0.0, 0.0,
+		100.0, 0.0, 0.0,
+		0.0, 0.0, 0.0,
+		0.0, 100.0, 0.0,
+		0.0, 0.0, 0.0,
+		0.0, 0.0, 100.0,
+
+		0.0, 0.0, 0.0,
+		-100.0, 0.0, 0.0,
+		0.0, 0.0, 0.0,
+		0.0, -100.0, 0.0,
+		0.0, 0.0, 0.0,
+		0.0, 0.0, -100.0,
+	];
+		
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coordVertices), gl.STATIC_DRAW);
+	
+	coordSystem.colorBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, coordSystem.colorBuffer);
+	
+	var coordColors = 
+	[
+		1.0, 0.0, 0.0, 1.0,
+		1.0, 0.0, 0.0, 1.0,
+		0.0, 1.0, 0.0, 1.0,
+		0.0, 1.0, 0.0, 1.0,
+		0.0, 0.0, 1.0, 1.0,
+		0.0, 0.0, 1.0, 1.0,
+		
+		0.3, 0.0, 0.0, 1.0,
+		0.3, 0.0, 0.0, 1.0,
+		0.0, 0.3, 0.0, 1.0,
+		0.0, 0.3, 0.0, 1.0,
+		0.0, 0.0, 0.3, 1.0,
+		0.0, 0.0, 0.3, 1.0,
+	];
+	
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coordColors), gl.STATIC_DRAW);
 	
 	return true;
 }  
@@ -202,10 +298,20 @@ function resize()
 	
 	log('Resizing to ' + width + ' x ' + height);
 
-	projectionMatrix.perspective(45, width / height, 0.1, 100.0);
+	projectionMatrix.perspective(45, width / height, 1.0, 1000.0);
 	gl.viewport(0, 0, width, height);
 	
 	projectionMatrix.setUniform(gl, projectionMatrixLocation, false);
+}
+
+/**
+ * Updates the scene.
+ *
+ * @param interval Number seconds passed since the last frame.
+ */
+function update(interval)
+{
+	camera.update(interval);
 }
 
 function render()
@@ -213,15 +319,102 @@ function render()
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);  
     
 	modelviewMatrix.makeIdentity();
-	modelviewMatrix.translate(0,0,-10);
-	modelviewMatrix.setUniform(gl, modelviewMatrixLocation, false);
+	camera.look();
+	//modelviewMatrix.translate(0,0,-10);
+	//modelviewMatrix.setUniform(gl, modelviewMatrixLocation, false);
 
-	gl.bindBuffer(gl.ARRAY_BUFFER, squareVerticesBuffer);  
-	gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);  
+	gl.bindBuffer(gl.ARRAY_BUFFER, square.vertexBuffer);  
+	gl.vertexAttribPointer(vertexPositionLocation, 3, gl.FLOAT, false, 0, 0);  
+	gl.bindBuffer(gl.ARRAY_BUFFER, square.colorBuffer);  
+    gl.vertexAttribPointer(vertexColorLocation, 4, gl.FLOAT, false, 0, 0); 
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 	
-	setTimeout('render();', 500);
+	
+	gl.bindBuffer(gl.ARRAY_BUFFER, coordSystem.vertexBuffer);  
+	gl.vertexAttribPointer(vertexPositionLocation, 3, gl.FLOAT, false, 0, 0);
+	gl.bindBuffer(gl.ARRAY_BUFFER, coordSystem.colorBuffer);  
+	gl.vertexAttribPointer(vertexColorLocation, 4, gl.FLOAT, false, 0, 0);  
+	
+	gl.drawArrays(gl.LINES, 0, 12);
+}
+
+var lastTime = new Date().getTime();
+var fps;
+var fpsCounter = 0;
+var lastFpsUpdate = 0;
+
+function mainloop()
+{
+	// Calculate time since the last frame
+	var time = new Date().getTime();
+	var interval = time - lastTime;
+	
+	// Update FPS
+	fpsCounter++;
+	if(time - lastFpsUpdate >= 1000)
+	{
+		// Update of fps is longer than a second ago
+		fps = fpsCounter;
+		fpsCounter = 0;
+		lastFpsUpdate = time;
+		log("FPS: " + fps);
+	}
+	
+	lastTime = time;
+	
+	// Update the scene based on the passed time
+	update(interval / 1000.0);
+	
+	// Send all geometry to the renderer
+	render();
+	
+	// Start next frame
+	setTimeout('mainloop();', 100);
+}
+
+function setEventHandlers()
+{
+	/**
+	 * Event handler for updating the current key states on key press.
+	 */
+	document.onkeydown = function(event)
+	{
+		keys[event.keyCode] = true;
+	};
+
+	/**
+	 * Event handler for updating the current key states on key release.
+	 */
+	document.onkeyup = function(event)
+	{
+		keys[event.keyCode] = false;
+	};
+
+	/**
+	 * Event handler for updating the current mouse position in camera.
+	 */
+	document.onmousemove = function(event)
+	{
+		mouse.x = event.pageX;
+		mouse.y = event.pageY;
+	};
+
+	/**
+	 * Event handler for mouse down to enable mouse tracking.
+	 */
+	document.onmousedown = function()
+	{
+		camera.beginCapture();
+	}
+
+	/**
+	 * Event handler for mouse up to stop mouse tracking.
+	 */
+	document.onmouseup = function(event)
+	{
+		camera.endCapture();
+	}
 }
 
 function main()
@@ -237,8 +430,15 @@ function main()
 		
 	resize();
 	
-	log('Start rendering');
-	render();
+	setEventHandlers();
+	
+	camera.z = 0;
+	
+	log('Starting mainloop');
+	mainloop();
 }
 
+// GET THE BALL ROLLING
 window.onload = main;
+
+	

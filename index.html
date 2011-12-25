@@ -2,10 +2,13 @@
 <html>
 	<head>
 		<title>HLBSP viewer</title>
-		<link rel="stylesheet" type="text/css" href="style.css">
-		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="css/style.css">
+		<script src="js/jquery-1.7.1.min.js"></script>
 		<script src="js/J3DIMath.js"></script>
+		
+		<script src="js/camera.js"></script>
 		<script src="js/main.js"></script>
+
 	</head>
 	<body>
 		<h1>HLBSP viewer</h1>
@@ -19,20 +22,26 @@
 			</tbody>
 		</table>
 		<script id="shader-vs" type="x-shader/x-vertex">  
-			attribute vec3 aVertexPosition;  
-		  
 			uniform mat4 mvMatrix;  
 			uniform mat4 pMatrix;  
 			
+			attribute vec3 vertexPosition;
+			attribute vec4 vertexColor;
+			
+			varying lowp vec4 color;
+			
 			void main(void)
 			{  
-				gl_Position = pMatrix * mvMatrix * vec4(aVertexPosition, 1.0);  
+				color = vertexColor;
+				gl_Position = pMatrix * mvMatrix * vec4(vertexPosition, 1.0);  
 			}  
 		</script>  
-		<script id="shader-fs" type="x-shader/x-fragment">  
+		<script id="shader-fs" type="x-shader/x-fragment">
+			varying lowp vec4 color;
+		
 			void main(void)
 			{  
-				gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);  
+				gl_FragColor = color;  
 			}  
 		</script>
 	</body>

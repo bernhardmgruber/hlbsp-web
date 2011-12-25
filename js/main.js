@@ -387,7 +387,7 @@ function mainloop()
 	render();
 	
 	// Start next frame
-	setTimeout(mainloop, 0);
+	setTimeout(mainloop, 100);
 }
 
 function main()

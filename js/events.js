@@ -25,7 +25,7 @@ function handleBSPFileSelection(event)
 	{
 		$('#bsploading progress')[0].value = 100;
 		$('#bsploading p:last-child').text('Parsing bsp file ...');
-		if(bsp.loadBSPFromMemory(event.target.result))
+		if(bsp.loadBSP(event.target.result))
 			$('#bsploading p:last-child').text('Success');
 		else
 			$('#bsploading p:last-child').text('Error');
@@ -52,20 +52,20 @@ function setEventHandlers()
 	};
 
 	// Event handler for updating the current mouse position in camera.
-	document.onmousemove = function(event)
+	canvas.onmousemove = function(event)
 	{
 		mouse.x = event.pageX;
 		mouse.y = event.pageY;
 	};
 
 	// Event handler for mouse down to enable mouse tracking.
-	document.onmousedown = function()
+	canvas.onmousedown = function()
 	{
 		camera.beginCapture();
 	}
 
 	// Event handler for mouse up to stop mouse tracking.
-	document.onmouseup = function(event)
+	canvas.onmouseup = function(event)
 	{
 		camera.endCapture();
 	}

@@ -44,7 +44,7 @@ var    LUMP_TEXINFO      = 6;
 var    LUMP_FACES        = 7;
 var    LUMP_LIGHTING     = 8;
 var    LUMP_CLIPNODES    = 9;
-var    LUMP_LEAFS        = 10;
+var    LUMP_LEAVES       = 10;
 var    LUMP_MARKSURFACES = 11;
 var    LUMP_EDGES        = 12;
 var    LUMP_SURFEDGES    = 13;
@@ -84,7 +84,22 @@ var RENDER_MODE_GLOW     = 3;
 var RENDER_MODE_SOLID    = 4;
 var RENDER_MODE_ADDITIVE = 5;
 
+/*
+typedef struct _VECTOR3D
+{
+	float x, y, z;
+} VECTOR3D;
+*/
+// @see mathlib.js Vector3D
+
 // Describes a lump in the BSP file
+/*
+typedef struct _BSPLUMP
+{
+	int32_t nOffset;
+	int32_t nLength;
+} BSPLUMP;
+*/
 function BspLump()
 {
     var offset; // File offset to data
@@ -92,59 +107,107 @@ function BspLump()
 };
 
 // The BSP file header
+/*
+typedef struct _BSPHEADER
+{
+	int32_t nVersion;		
+	BSPLUMP lump[HEADER_LUMPS];
+} BSPHEADER;
+*/
 function BspHeader()
 {
-    var version;                         // Version number, must be 30 for a valid HL BSP file
-    var lumps = new Array(HEADER_LUMPS); // Stores the directory of lumps.
+    var version; // Version number, must be 30 for a valid HL BSP file
+    var lumps;   // Stores the directory of lumps as array of BspLump (HEADER_LUMPS elements)
 };
 
 // Describes a node of the BSP Tree
+/*
+typedef struct _BSPNODE
+{
+	uint32_t iPlane;			 
+	int16_t  iChildren[2];		 
+	int16_t  nMins[3], nMaxs[3]; 
+	uint16_t iFirstFace, nFaces;  
+} BSPNODE;
+*/
 function BspNode()
 {
-    var plane;                   // Index into pPlanes lump
-    var children = new Array(2); // If > 0, then indices into Nodes otherwise bitwise inverse indices into Leafs
-	var mins = new Array(3);     // Bounding box
-	var maxs = new Array(3);
-	var firstFace;               // Index and count into BSPFACES array
+    var plane;     // Index into pPlanes lump
+    var children;  // If > 0, then indices into Nodes otherwise bitwise inverse indices into Leafs
+	var mins;      // Bounding box
+	var maxs;
+	var firstFace; // Index and count into BSPFACES array
 	var faces;
 };
+var SIZE_OF_BSPNODE = 24;
 
 // Leafs lump contains leaf structures
+/*
+typedef struct _BSPLEAF
+{
+	int32_t  nContents;			              
+	int32_t  nVisOffset;		              
+	int16_t  nMins[3], nMaxs[3];             
+	uint16_t iFirstMarkSurface, nMarkSurfaces;
+	uint8_t  nAmbientLevels[4];	        
+} BSPLEAF;
+*/
 function BspLeaf()
 {
-    var content;                      // Contents enumeration, see vars
-    var visOffset;                    // Offset into the compressed visibility lump
-	var mins = new Array(3);          // Bounding box
-	var maxs = new Array(3);
-	var firstMarkSurface;             // Index and count into BSPMARKSURFACE array
+    var content;          // Contents enumeration, see vars
+    var visOffset;        // Offset into the compressed visibility lump
+	var mins;             // Bounding box
+	var maxs;
+	var firstMarkSurface; // Index and count into BSPMARKSURFACE array
 	var markSurfaces
-	var ambientLevels = new Array(4); // Ambient sound levels              
+	var ambientLevels;    // Ambient sound levels              
 };
+var SIZE_OF_BSPLEAF = 28;
 
 // Leaves index into marksurfaces, which index into pFaces
-function BspMarkSurface()
-{
-	var index; // Index into faces
-}
+/*
+typedef uint16_t BSPMARKSURFACE;
+*/
+var SIZE_OF_BSPMARKSURFACE  = 2;
 
 // Planes lump contains plane structures
+/*
+typedef struct _BSPPLANE
+{
+	VECTOR3D vNormal; 
+	float    fDist;  
+	int32_t  nType; 
+} BSPPLANE;
+*/
 function BspPlane()
 {
-    VECTOR3D vNormal; // The planes normal vector
-    float    fDist;   // Plane equation is: vNormal * X = fDist
-    int32_t  nType;   // Plane type, see vars
+    var normal; // The planes normal vector
+    var dist;   // Plane equation is: vNormal * X = fDist
+    var type;   // Plane type, see vars
 };
+var SIZE_OF_BSPPLANE = 20;
 
 // Vertex lump is an array of float triples (VECTOR3D)
+/*
 typedef VECTOR3D BSPVERTEX;
+*/
+var SIZE_OF_BSPVERTEX = 12;
 
 // Edge struct contains the begining and end vertex for each edge
+/*
 typedef struct _BSPEDGE
 {
-    uint16_t iVertex[2];        // Indices into vertex array
+    uint16_t iVertex[2];        
 };
+*/
+function BspEdge()
+{
+	var vertices; // Indices into vertex array
+}
+var SIZE_OF_BSPEDGE = 4;
 
 // Faces are equal to the polygons that make up the world
+/*
 typedef struct _BSPFACE
 {
     uint16_t iPlane;                // Index of the plane the face is parallel to
@@ -158,53 +221,125 @@ typedef struct _BSPFACE
     //       nStyles[2], nStyles[3] // two additional light models
     uint32_t nLightmapOffset;    // Offsets into the raw lightmap data
 };
+*/
+function BspFace()
+{
+    var plane;               // Index of the plane the face is parallel to
+    var planeSide;           // Set if different normals orientation
+    var firstEdge;           // Index of the first edge (in the surfedge array)
+    var edges;               // Number of consecutive surfedges
+    var textureInfo;         // Index of the texture info structure
+    var styles;           // Specify lighting styles
+    //  styles[0]            // type of lighting, for the face
+    //  styles[1]            // from 0xFF (dark) to 0 (bright)
+    //  styles[2], styles[3] // two additional light models
+    var lightmapOffset;      // Offsets into the raw lightmap data
+}
+var SIZE_OF_BSPFACE = 20;
 
-// Surfedges lump is array of signed int indices into edge lump, where a negative index indicates
-// using the referenced edge in the opposite direction. Faces index into pSurfEdges, which index
-// into pEdges, which finally index into pVertices.
+
+// Surfedges lump is an array of signed int indices into the edge lump, where a negative index indicates
+// using the referenced edge in the opposite direction. Faces index into surfEdges, which index
+// into edges, which finally index into vertices.
+/*
 typedef int32_t BSPSURFEDGE;
+*/
+var SIZE_OF_BSPSURFEDGE = 4;
 
 // Textures lump begins with a header, followed by offsets to BSPMIPTEX structures, then BSPMIPTEX structures
+/*
 typedef struct _BSPTEXTUREHEADER
 {
-    uint32_t nMipTextures; // Number of BSPMIPTEX structures
+    uint32_t nMipTextures;
 };
-
+*/
 // 32-bit offsets (within texture lump) to (nMipTextures) BSPMIPTEX structures
+/*
 typedef int32_t BSPMIPTEXOFFSET;
+*/
+var SIZE_OF_BSPMIPTEXOFFSET = 4;
+function BspTextureHeader()
+{
+	var textures; // Number of BSPMIPTEX structures
+	var offsets;  // Array of offsets to the textures
+}
 
-// BSPMIPTEX structures which defines a Texture
-var MAXTEXTURENAME 16
-var    MIPLEVELS 4
+// BSPMIPTEX structures which defines a texture
+var MAXTEXTURENAME = 16
+var MIPLEVELS = 4
+/*
 typedef struct _BSPMIPTEX
 {
-    char     szName[MAXTEXTURENAME]; // Name of texture, for reference from external WAD file
-    uint32_t nWidth, nHeight;        // Extends of the texture
-    uint32_t nOffsets[MIPLEVELS];    // Offsets to MIPLEVELS texture mipmaps, if 0 texture data is stored in an external WAD file
+    char     szName[MAXTEXTURENAME]; 
+    uint32_t nWidth, nHeight;        
+    uint32_t nOffsets[MIPLEVELS];
 };
+*/
+function BspMipTexture()
+{
+	var name;    // Name of texture, for reference from external WAD file
+	var width;   // Extends of the texture
+	var height; 
+	var offsets; // Offsets to MIPLEVELS texture mipmaps, if 0 texture data is stored in an external WAD file
+}
 
-// Texinfo lump contains texinfo structures
+// Texinfo lump contains information about how textures are applied to surfaces
+/*
 typedef struct _BSPTEXTUREINFO
 {
-    VECTOR3D vS;      // 1st row of texture matrix
-    float    fSShift; // Texture shift in s direction
-    VECTOR3D vT;      // 2nd row of texture matrix - multiply 1st and 2nd by vertex to get texture coordinates
-    float    fTShift; // Texture shift in t direction
-    uint32_t iMiptex; // Index into textures array
-    uint32_t nFlags;  // Texture flags, seems to always be 0
+    VECTOR3D vS;      
+    float    fSShift; 
+    VECTOR3D vT;      
+    float    fTShift; 
+    uint32_t iMiptex; 
+    uint32_t nFlags; 
 };
+*/
+function BspTextureInfo()
+{
+	var s;          // 1st row of texture matrix
+	var sShift;     // Texture shift in s direction
+	var t;          // 2nd row of texture matrix - multiply 1st and 2nd by vertex to get texture coordinates
+	var tShift;     // Texture shift in t direction
+	var mipTexture; // Index into mipTextures array
+	var flags;      // Texture flags, seems to always be 0
+}
+var SIZE_OF_BSPTEXTUREINFO = 48;
 
+// Smaller bsp models inside the world. Mostly brush entities.
+/*
 typedef struct _BSPMODEL
 {
-    float    nMins[3], nMaxs[3];        // Defines bounding box
-    VECTOR3D vOrigin;                   // Coordinates to move the coordinate system before drawing the model
-    int32_t  iHeadNodes[MAX_MAP_HULLS]; // Index into nodes array
-    int32_t  nVisLeafs;                 // No idea
-    int32_t  iFirstFace, nFaces;        // Index and count into face array
+    float    nMins[3], nMaxs[3];    
+    VECTOR3D vOrigin;                  
+    int32_t  iHeadNodes[MAX_MAP_HULLS];
+    int32_t  nVisLeafs;                 
+    int32_t  iFirstFace, nFaces;        
 };
+*/
+function BspModel()
+{
+	var mins;          // Defines bounding box
+	var maxs; 
+	var origin;        // Coordinates to move the coordinate system before drawing the model
+	var headClipNodes; // Index into clipnodes
+	var visLeafs;      // No idea
+	var firstFace;     // Index and count into face array
+	var faces;
+}
+var SIZE_OF_BSPMODEL = 52;
 
+// Clip nodes are used for collision detection and make up the clipping hull.
+/*
 typedef struct _BSPCLIPNODE
 {
-    int32_t iPlane;       // Index into planes
-    int16_t iChildren[2]; // negative numbers are contents behind and in front of the plane
+    int32_t iPlane;
+    int16_t iChildren[2]; 
 };
+*/
+function BspClipNode()
+{
+	var plane;    // Index into planes
+	var children; // negative numbers are contents behind and in front of the plane
+}
+var SIZE_OF_BSPCLIPNODE = 8;

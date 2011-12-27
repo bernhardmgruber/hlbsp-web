@@ -57,20 +57,38 @@ function log(message, type)
 }
 
 /**
- * Checks the support of necessary file reading APIs.
+ * Checks the support of necessary APIs.
  */
-function checkFileReaderAPI()
+function checkRequiredAPI()
 {
-	if (window.File && window.FileReader && window.FileList && window.Blob)
-	{
+	if (window.File && window.FileReader && window.FileList)
 		log('FileReader API is supported', LogType.SUCCESS);
-		return true;
-	}
 	else
 	{
 		log('Sorry: Your browser does not support the FileReader API. No BSP files can be loaded!', LogType.ERROR);
 		return false;
 	}
+	
+	if (window.ArrayBuffer)
+		log('ArrayBuffer API is supported', LogType.SUCCESS);
+	else
+	{
+		log('Sorry: Your browser does not support the ArrayBuffer API. No BSP files can be loaded!', LogType.ERROR);
+		return false;
+	}
+	
+	// This is VERY new
+	// Khronos Editor's Draft 08 December 2011
+	// http://www.khronos.org/registry/typedarray/specs/latest/#8
+	if (window.DataView)
+		log('DataView API is supported', LogType.SUCCESS);
+	else
+	{
+		log('Sorry: Your browser does not support the DataView API. No BSP files can be loaded!', LogType.ERROR);
+		return false;
+	}
+	
+	return true;
 }
 
 /**
@@ -395,7 +413,7 @@ function main()
 	startTime = new Date();
 	log('<< STARTUP >>');
 
-	if(!checkFileReaderAPI())
+	if(!checkRequiredAPI())
 		return;
 	if(!initWebGL())
 		return;

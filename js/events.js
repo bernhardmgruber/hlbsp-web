@@ -17,7 +17,6 @@ function handleBSPFileSelection(event)
 			var value = Math.round(event.loaded / event.total * 100);
 			$('#bsploading progress')[0].value = value;
 			$('#bsploading p:last-child').text('Loading ... (' + value + '%)');
-			console.log(value);
 		}
 	}
 	

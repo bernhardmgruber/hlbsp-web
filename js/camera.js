@@ -137,7 +137,7 @@ var camera = new function()
             this.y += Math.sin(degToRad(this.yaw - 90.0)) * moveFactor;
         }
 		
-		console.log('camera.update() pos: ' + this.x + 'x ' + this.y + 'y ' + this.z + 'z pitch: ' + this.pitch + ' yaw: ' + this.yaw);
+		//console.log('camera.update() pos: ' + this.x + 'x ' + this.y + 'y ' + this.z + 'z pitch: ' + this.pitch + ' yaw: ' + this.yaw);
 	}
 	
 	/**
@@ -159,6 +159,6 @@ var camera = new function()
 		// Upload to shader
 		modelviewMatrix.setUniform(gl, modelviewMatrixLocation, false);
 		
-		console.log('camera.look()');
+		//console.log('camera.look()');
 	}
 }

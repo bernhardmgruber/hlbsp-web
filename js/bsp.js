@@ -12,7 +12,7 @@ function Bsp()
     var leaves;
     var markSurfaces;
     var planes;
-    var vertices;
+    var vertices; // actually not needed for rendering, vertices are stored in vertexBuffer. But just in case someone needs them for e.g. picking etc.
     var edges;
     var faces;
     var surfEdges;
@@ -21,14 +21,249 @@ function Bsp()
     var textureInfos;
     var models;
     var clipNodes;
+	
+	/** If set to true, all resources are ready to render */
+	var loaded = false;
+	
+	var vertexBuffer;
+	var indexBuffer;
+	
+	var texCoordBuffer;
 };
 
+/**
+ * Returns the leaf that contains the given position
+ *
+ * @param pos A Vector3D describing the position to search for.
+ * @return Returns the leaf index where the position is found or -1 otherwise.
+ */
+Bsp.prototype.traverseTree = function(pos, nodeIndex)
+{
+	if(nodeIndex == undefined)
+		nodeIndex = 0;
+		
+	var node = this.nodes[nodeIndex];
+		
+    // Run once for each child
+    for (var i = 0; i < 2; i++)
+    {
+        // If the index is positive  it is an index into the nodes array
+        if ((node.children[i]) >= 0)
+        {
+            if(pointInBox(pos, this.nodes[node.children[i]].mins, this.nodes[node.children[i]].maxs))
+                return this.traverseTree(pos, node.children[i]);
+        }
+        // Else, bitwise inversed, it is an index into the leaf array
+        // Do not test solid leaf 0
+        else if (~this.nodes[nodeIndex].children[i] != 0)
+        {
+            if(pointInBox(pos, this.leaves[~(node.children[i])].mins, this.leaves[~(node.children[i])].maxs))
+                return ~(node.children[i]);
+        }
+    }
+
+    return -1;
+}
+
+/**
+ * Renders the complete level
+ */
+Bsp.prototype.render = function(cameraPos)
+{
+	// Get the leaf where the camera is in
+	var cameraLeaf = this.traverseTree(cameraPos);
+	console.log("Camera in leaf " + cameraLeaf);
+	
+	// Bind the vertex buffer
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);  
+	gl.vertexAttribPointer(vertexPositionLocation, 3, gl.FLOAT, false, 0, 0);
+	
+	// Bind the index buffer
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+	
+	// Start the render traversal
+	this.renderNode(0, cameraLeaf, cameraPos);
+	
+}
+
+Bsp.prototype.renderNode = function(nodeIndex, cameraLeaf, cameraPos)
+{
+    if (nodeIndex < 0)
+    {
+        if (nodeIndex == -1) // Solid leaf 0
+            return;
+
+        //if (cameraLeaf > 0)
+        //    if (header.lump[LUMP_VISIBILITY].nLength != 0 && ppbVisLists != NULL && ppbVisLists[cameraLeaf - 1] != NULL && !ppbVisLists[cameraLeaf - 1][~nodeIndex - 1])
+        //        return;
+
+        this.renderLeaf(~nodeIndex);
+
+        return;
+    }
+
+    var distance;
+	
+	var node = this.nodes[nodeIndex];
+	var plane = this.planes[node.plane];
+
+    switch (plane.type)
+    {
+    case PLANE_X:
+        distance = cameraPos.x - plane.dist;
+	    break;
+    case PLANE_Y:
+        distance = cameraPos.y - plane.dist;
+		break;
+    case PLANE_Z:
+        distance = cameraPos.z - plane.dist;
+		break;
+    default:
+        distance = dotProduct(plane.normal, cameraPos) - plane.dist;
+    }
+
+    if (distance > 0.0)
+    {
+        this.renderNode(node.children[1], cameraLeaf, cameraPos);
+        this.renderNode(node.children[0], cameraLeaf, cameraPos);
+    }
+    else
+    {
+        this.renderNode(node.children[0], cameraLeaf, cameraPos);
+        this.renderNode(node.children[1], cameraLeaf, cameraPos);
+    }
+}
+
+Bsp.prototype.renderLeaf = function(leafIndex)
+{
+	var leaf = this.leaves[leafIndex];
+	
+    // Loop through each face in this leaf
+    for (var i = 0; i < leaf.markSurfaces; i++)
+        this.renderFace(this.markSurfaces[leaf.firstMarkSurface + i]);
+}
+
+Bsp.prototype.renderFace = function(faceIndex)
+{
+	var face = this.faces[faceIndex];
+	var texInfo = this.textureInfos[face.textureInfo];
+	
+    if (face.styles[0] == 0xFF)
+        return; // Skip sky faces
+
+	// if the light map offset is not -1 and the lightmap lump is not empty, there are lightmaps
+    var lightmapAvailable = face.lightmapOffset != -1 && this.header.lumps[LUMP_LIGHTING].length > 0;
+	
+	// Prepare the index buffer for the next pass
+	var indexes = new Array();
+
+	//console.log("Rendering face " + faceIndex);
+	
+	//if(faceIndex == 76)
+	//	console.log("LOL");
+	
+    /*if (lightmapAvailable)
+    {
+        // We need both texture units for textures and lightmaps
+
+        // base texture
+        glActiveTexture(GL_TEXTURE0_ARB);
+        glBindTexture(GL_TEXTURE_2D, pnTextureLookUp[texInfo.iMiptex]);
+
+        // light map
+        glActiveTexture(GL_TEXTURE1_ARB);
+        glBindTexture(GL_TEXTURE_2D, pnLightmapLookUp[iFace]);
+
+        glBegin(GL_TRIANGLE_FAN);
+        for (int i=0; i<pFaces[iFace].nEdges; i++)
+        {
+            glMultiTexCoord2f(GL_TEXTURE0_ARB, pFaceTexCoords[iFace].pTexCoords[i].fS, pFaceTexCoords[iFace].pTexCoords[i].fT);
+            glMultiTexCoord2f(GL_TEXTURE1_ARB, pFaceTexCoords[iFace].pLightmapCoords[i].fS, pFaceTexCoords[iFace].pLightmapCoords[i].fT);
+
+            // normal
+            VECTOR3D vNormal = pPlanes[pFaces[iFace].iPlane].vNormal;
+            if (pFaces[iFace].nPlaneSide)
+                vNormal = vNormal * -1;
+            glNormal3f(vNormal.x, vNormal.y, vNormal.z);
+
+            int iEdge = pSurfEdges[pFaces[iFace].iFirstEdge + i]; // This gives the index into the edge lump
+
+            if (iEdge > 0)
+            {
+                glVertex3f(pVertices[pEdges[iEdge].iVertex[0]].x, pVertices[pEdges[iEdge].iVertex[0]].y, pVertices[pEdges[iEdge].iVertex[0]].z);
+            }
+            else
+            {
+                iEdge *= -1;
+                glVertex3f(pVertices[pEdges[iEdge].iVertex[1]].x, pVertices[pEdges[iEdge].iVertex[1]].y, pVertices[pEdges[iEdge].iVertex[1]].z);
+            }
+        }
+        glEnd();
+    }
+    else
+    {*/
+	
+	// We need one texture unit for either textures or lightmaps
+	/*glActiveTexture(GL_TEXTURE0_ARB);
+
+	if(g_bLightmaps)
+		glBindTexture(GL_TEXTURE_2D, pnLightmapLookUp[iFace]);
+	else
+		glBindTexture(GL_TEXTURE_2D, pnTextureLookUp[pTextureInfos[pFaces[iFace].iTextureInfo].iMiptex]);
+
+	glBegin(GL_TRIANGLE_FAN);*/
+	for (var i = 0; i < face.edges; i++)
+	{
+		/*if(g_bLightmaps)
+			glTexCoord2f(pFaceTexCoords[iFace].pLightmapCoords[i].fS, pFaceTexCoords[iFace].pLightmapCoords[i].fT);
+		else
+			glTexCoord2f(pFaceTexCoords[iFace].pTexCoords[i].fS, pFaceTexCoords[iFace].pTexCoords[i].fT);
+
+		// normal
+		VECTOR3D vNormal = pPlanes[pFaces[iFace].iPlane].vNormal;
+		if (pFaces[iFace].nPlaneSide)
+			vNormal = vNormal * -1;
+		glNormal3f(vNormal.x, vNormal.y, vNormal.z);*/
+
+		var edgeIndex = this.surfEdges[face.firstEdge + i]; // This gives the index into the edge lump
+
+		if (edgeIndex > 0)
+		{
+			var edge = this.edges[edgeIndex];
+			var vertexIndex = edge.vertices[0];
+			indexes.push(vertexIndex);
+			//glVertex3f(pVertices[vertexIndex].x, pVertices[vertexIndex].y, pVertices[vertexIndex].z);
+		}
+		else
+		{
+			edgeIndex *= -1;
+			var edge = this.edges[edgeIndex];
+			var vertexIndex = edge.vertices[1];
+			indexes.push(vertexIndex);
+			//glVertex3f(pVertices[vertexIndex].x, pVertices[vertexIndex].y, pVertices[vertexIndex].z);
+		}
+	}
+	//glEnd();
+	
+	// Upload the collected vertex indexes to the index buffer and render them
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexes), gl.DYNAMIC_DRAW);
+
+	gl.drawElements(polygonMode ? gl.LINE_LOOP : gl.TRIANGLE_FAN, indexes.length, gl.UNSIGNED_SHORT, 0);
+}
+
+/**
+ * Loades the complete level and prepares it for rendering
+ */
 Bsp.prototype.loadBSP = function(arrayBuffer)
 {
     console.log('Begin loading BSP');
+	this.loaded = false;
     
     var src = new BinaryFile(arrayBuffer);
     
+	// ====================================================================================================
+	// =                                        Load file content                                         =
+	// ====================================================================================================
     if(!this.readHeader(src))
 		return false;
 		
@@ -36,7 +271,7 @@ Bsp.prototype.loadBSP = function(arrayBuffer)
     this.readLeaves(src);
     this.readMarkSurfaces(src);
     this.readPlanes(src);
-    this.readVertices(src);
+    this.readVertices(src); // also creates vertexBuffer here
     this.readEdges(src);
     this.readFaces(src);
     this.readSurfEdges(src);
@@ -44,8 +279,24 @@ Bsp.prototype.loadBSP = function(arrayBuffer)
     this.readTextureInfos(src);
     this.readModels(src);
     this.readClipNodes(src);
+	
+	this.loadEntities(src);
+	this.loadLightmaps(src);
+	this.loadVIS(src);
+	
+	// ====================================================================================================
+	// =                                          Process input                                           =
+	// ====================================================================================================
+	
+	this.generateTextureCoordinates();
+	//this.loadDecals();
+	//this.loadSky();
+	
+	// MISC
+	this.indexBuffer = gl.createBuffer();
     
     console.log('Finished loading BSP');
+	this.loaded = true;
     
     return true;
 }
@@ -125,7 +376,7 @@ Bsp.prototype.readLeaves = function(src)
         
         leaf.content = src.readLong();
         
-        leaf.visOffset = src.readShort();
+        leaf.visOffset = src.readLong();
         
 		leaf.mins = new Array();
         leaf.mins.push(src.readShort());
@@ -203,9 +454,14 @@ Bsp.prototype.readVertices = function(src)
         vertex.x = src.readFloat();
         vertex.y = src.readFloat();
         vertex.z = src.readFloat();
-        
+		
         this.vertices.push(vertex);
     }
+	
+	this.vertexBuffer = gl.createBuffer();  
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);  
+		
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(src.buffer, this.header.lumps[LUMP_VERTICES].offset, this.vertices.length * 3), gl.STATIC_DRAW); 
     
     console.log('Read ' + this.vertices.length + ' Vertices');
 }
@@ -244,7 +500,7 @@ Bsp.prototype.readFaces = function(src)
         
         face.planeSide = src.readUShort();
         
-        face.firstEdge = src.readLong();
+        face.firstEdge = src.readULong();
         
         face.edges = src.readUShort();
         
@@ -256,7 +512,7 @@ Bsp.prototype.readFaces = function(src)
         face.styles.push(src.readUByte());
         face.styles.push(src.readUByte());
         
-        face.lightmapOffset = src.readUShort();
+        face.lightmapOffset = src.readULong();
         
         this.faces.push(face);
     }
@@ -414,6 +670,49 @@ Bsp.prototype.readClipNodes = function(src)
     }
     
     console.log('Read ' + this.clipNodes.length + ' ClipNodes');
+}
+
+Bsp.prototype.loadEntities = function(src)
+{
+
+}
+
+Bsp.prototype.loadLightmaps = function(src)
+{
+
+}
+
+Bsp.prototype.loadVIS = function(src)
+{
+
+}
+
+Bsp.prototype.generateTextureCoordinates = function()
+{
+    for (var i = 0; i < this.faces.length; i++)
+    {
+		var face = this.faces[i];
+		var texInfo = this.textureInfos[face.textureInfo];
+
+        for (var j = 0; j < face.edges; j++)
+        {
+            var edgeIndex = this.surfEdges[face.firstEdge + j];
+
+            if (edgeIndex > 0)
+            {
+				var edge = this.edges[edgeIndex];
+                pFaceTexCoords[i].pTexCoords[j].fS = (DotProduct(pVertices[edge.iVertex[0]], curTexInfo.vS) + curTexInfo.fSShift) / pMipTextures[curTexInfo.iMiptex].nWidth;
+                pFaceTexCoords[i].pTexCoords[j].fT = (DotProduct(pVertices[edge.iVertex[0]], curTexInfo.vT) + curTexInfo.fTShift) / pMipTextures[curTexInfo.iMiptex].nHeight;
+            }
+            else
+            {
+                edgeIndex *= -1;
+				var edge = this.edges[edgeIndex];
+                pFaceTexCoords[i].pTexCoords[j].fS = (DotProduct(pVertices[edge.iVertex[1]], curTexInfo.vS) + curTexInfo.fSShift) / pMipTextures[curTexInfo.iMiptex].nWidth;
+                pFaceTexCoords[i].pTexCoords[j].fT = (DotProduct(pVertices[edge.iVertex[1]], curTexInfo.vT) + curTexInfo.fTShift) / pMipTextures[curTexInfo.iMiptex].nHeight;
+            }
+        }
+    }
 }
 
 var bsp = new Bsp();

@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /**
  * Contains the standard BSP v30 file definitions.
@@ -6,67 +6,67 @@
  * http://hlbsp.sourceforge.net/index.php?content=bspdef
  */
 
-var    MAX_MAP_HULLS        = 4;
+var MAX_MAP_HULLS        = 4;
 
-var    MAX_MAP_MODELS       = 400;
-var    MAX_MAP_BRUSHES      = 4096;
-var    MAX_MAP_ENTITIES     = 1024;
-var    MAX_MAP_ENTSTRING    = (128*1024);
+var MAX_MAP_MODELS       = 400;
+var MAX_MAP_BRUSHES      = 4096;
+var MAX_MAP_ENTITIES     = 1024;
+var MAX_MAP_ENTSTRING    = (128*1024);
 
-var    MAX_MAP_PLANES       = 32767;
-var    MAX_MAP_NODES        = 32767; // because negative shorts are leaves
-var    MAX_MAP_CLIPNODES    = 32767; //
-var    MAX_MAP_LEAFS        = 8192;
-var    MAX_MAP_VERTS        = 65535;
-var    MAX_MAP_FACES        = 65535;
-var    MAX_MAP_MARKSURFACES = 65535;
-var    MAX_MAP_TEXINFO      = 8192;
-var    MAX_MAP_EDGES        = 256000;
-var    MAX_MAP_SURFEDGES    = 512000;
-var    MAX_MAP_TEXTURES     = 512;
-var    MAX_MAP_MIPTEX       = 0x200000;
-var    MAX_MAP_LIGHTING     = 0x200000;
-var    MAX_MAP_VISIBILITY   = 0x200000;
+var MAX_MAP_PLANES       = 32767;
+var MAX_MAP_NODES        = 32767; // because negative shorts are leaves
+var MAX_MAP_CLIPNODES    = 32767; //
+var MAX_MAP_LEAFS        = 8192;
+var MAX_MAP_VERTS        = 65535;
+var MAX_MAP_FACES        = 65535;
+var MAX_MAP_MARKSURFACES = 65535;
+var MAX_MAP_TEXINFO      = 8192;
+var MAX_MAP_EDGES        = 256000;
+var MAX_MAP_SURFEDGES    = 512000;
+var MAX_MAP_TEXTURES     = 512;
+var MAX_MAP_MIPTEX       = 0x200000;
+var MAX_MAP_LIGHTING     = 0x200000;
+var MAX_MAP_VISIBILITY   = 0x200000;
 
-var    MAX_MAP_PORTALS      = 65536;
+var MAX_MAP_PORTALS      = 65536;
 
-var    MAX_KEY              = 32;
-var    MAX_VALUE            = 1024;
+var MAX_KEY              = 32;
+var MAX_VALUE            = 1024;
 
 // BSP-30 files contain these lumps
-var    LUMP_ENTITIES     = 0;
-var    LUMP_PLANES       = 1;
-var    LUMP_TEXTURES     = 2;
-var    LUMP_VERTICES     = 3;
-var    LUMP_VISIBILITY   = 4;
-var    LUMP_NODES        = 5;
-var    LUMP_TEXINFO      = 6;
-var    LUMP_FACES        = 7;
-var    LUMP_LIGHTING     = 8;
-var    LUMP_CLIPNODES    = 9;
-var    LUMP_LEAVES       = 10;
-var    LUMP_MARKSURFACES = 11;
-var    LUMP_EDGES        = 12;
-var    LUMP_SURFEDGES    = 13;
-var    LUMP_MODELS       = 14;
-var    HEADER_LUMPS      = 15;
+var LUMP_ENTITIES     = 0;
+var LUMP_PLANES       = 1;
+var LUMP_TEXTURES     = 2;
+var LUMP_VERTICES     = 3;
+var LUMP_VISIBILITY   = 4;
+var LUMP_NODES        = 5;
+var LUMP_TEXINFO      = 6;
+var LUMP_FACES        = 7;
+var LUMP_LIGHTING     = 8;
+var LUMP_CLIPNODES    = 9;
+var LUMP_LEAVES       = 10;
+var LUMP_MARKSURFACES = 11;
+var LUMP_EDGES        = 12;
+var LUMP_SURFEDGES    = 13;
+var LUMP_MODELS       = 14;
+var HEADER_LUMPS      = 15;
 
 // Leaf content values
-var    CONTENTS_EMPTY        = -1;
-var    CONTENTS_SOLID        = -2;
-var    CONTENTS_WATER        = -3;
-var    CONTENTS_SLIME        = -4;
-var    CONTENTS_LAVA         = -5;
-var    CONTENTS_SKY          = -6;
-var    CONTENTS_ORIGIN       = -7;
-var    CONTENTS_CLIP         = -8;
-var    CONTENTS_CURRENT_0    = -9;
-var    CONTENTS_CURRENT_90   = -10;
-var    CONTENTS_CURRENT_180  = -11;
-var    CONTENTS_CURRENT_270  = -12;
-var    CONTENTS_CURRENT_UP   = -13;
-var    CONTENTS_CURRENT_DOWN = -14;
-var    CONTENTS_TRANSLUCENT  = -15;
+var CONTENTS_EMPTY        = -1;
+var CONTENTS_SOLID        = -2;
+var CONTENTS_WATER        = -3;
+var CONTENTS_SLIME        = -4;
+var CONTENTS_LAVA         = -5;
+var CONTENTS_SKY          = -6;
+var CONTENTS_ORIGIN       = -7;
+var CONTENTS_CLIP         = -8;
+var CONTENTS_CURRENT_0    = -9;
+var CONTENTS_CURRENT_90   = -10;
+var CONTENTS_CURRENT_180  = -11;
+var CONTENTS_CURRENT_270  = -12;
+var CONTENTS_CURRENT_UP   = -13;
+var CONTENTS_CURRENT_DOWN = -14;
+var CONTENTS_TRANSLUCENT  = -15;
 
 //Plane types
 var PLANE_X    = 0; // Plane is perpendicular to given axis
@@ -304,7 +304,7 @@ function BspTextureInfo()
 	var mipTexture; // Index into mipTextures array
 	var flags;      // Texture flags, seems to always be 0
 }
-var SIZE_OF_BSPTEXTUREINFO = 48;
+var SIZE_OF_BSPTEXTUREINFO = 40;
 
 // Smaller bsp models inside the world. Mostly brush entities.
 /*
@@ -327,7 +327,7 @@ function BspModel()
 	var firstFace;     // Index and count into face array
 	var faces;
 }
-var SIZE_OF_BSPMODEL = 52;
+var SIZE_OF_BSPMODEL = 64;
 
 // Clip nodes are used for collision detection and make up the clipping hull.
 /*

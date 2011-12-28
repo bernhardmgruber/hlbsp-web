@@ -54,6 +54,8 @@ function log(message, type)
 	var html = '<tr class=' + type + '><td>' + logcount + '</td><td>' + (currentTime.getTime() - startTime.getTime()) + 'ms' + '</td><td>' + message + '</td></tr>';
 	
 	$('#log tbody').append(html);
+	
+	console.log("LOG: " + message);
 }
 
 /**
@@ -278,18 +280,18 @@ function initBuffers()
 	var coordVertices =
 	[  
 		0.0, 0.0, 0.0,
-		100.0, 0.0, 0.0,
+		4000.0, 0.0, 0.0,
 		0.0, 0.0, 0.0,
-		0.0, 100.0, 0.0,
+		0.0, 4000.0, 0.0,
 		0.0, 0.0, 0.0,
-		0.0, 0.0, 100.0,
+		0.0, 0.0, 4000.0,
 
 		0.0, 0.0, 0.0,
-		-100.0, 0.0, 0.0,
+		-4000.0, 0.0, 0.0,
 		0.0, 0.0, 0.0,
-		0.0, -100.0, 0.0,
+		0.0, -4000.0, 0.0,
 		0.0, 0.0, 0.0,
-		0.0, 0.0, -100.0,
+		0.0, 0.0, -4000.0,
 	];
 		
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coordVertices), gl.STATIC_DRAW);
@@ -333,7 +335,7 @@ function resize()
 	
 	log('Resizing to ' + width + ' x ' + height);
 
-	projectionMatrix.perspective(45, width / height, 1.0, 1000.0);
+	projectionMatrix.perspective(60.0, width / height, 8.0, 4000.0);
 	gl.viewport(0, 0, width, height);
 	
 	projectionMatrix.setUniform(gl, projectionMatrixLocation, false);
@@ -372,6 +374,9 @@ function render()
 	gl.vertexAttribPointer(vertexColorLocation, 4, gl.FLOAT, false, 0, 0);  
 	
 	gl.drawArrays(gl.LINES, 0, 12);
+	
+	if(bsp.loaded)
+		bsp.render(camera.pos);
 }
 
 var lastTime = new Date().getTime();
@@ -405,7 +410,7 @@ function mainloop()
 	render();
 	
 	// Start next frame
-	setTimeout(mainloop, 100);
+	setTimeout(mainloop, 50);
 }
 
 function main()

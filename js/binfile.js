@@ -74,6 +74,5 @@ BinaryFile.prototype.readString = function(length)
 		str += String.fromCharCode(this.view.getUint8(this.offset));
 		this.offset += 1;
 	}
-	console.log('Decoded string: [' + str + ']');
 	return str;
 };

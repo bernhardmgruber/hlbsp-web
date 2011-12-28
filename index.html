@@ -62,7 +62,8 @@
 			
 			void main(void)
 			{  
-				color = vertexColor;
+				//color = vertexColor;
+				color = vec4(1.0, 0.0, 0.0, 1.0);
 				gl_Position = pMatrix * mvMatrix * vec4(vertexPosition, 1.0);  
 			}  
 		</script>  

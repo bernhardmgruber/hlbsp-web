@@ -21,12 +21,13 @@ var camera = new function()
 	this.yaw = 0;
 	
 	/** position */
-	this.x = 0;
-	this.y = 0;
-	this.z = 0;
+	this.pos = new Vector3D();
+	this.pos.x = 0;
+	this.pos.y = 0;
+	this.pos.z = 0;
 	
 	/** Look sensitivity. Applies to mouse movement */
-	this.lookSens = 0.15;
+	this.lookSens = 0.25;
 	
 	/** Move sensitivity. Applies to keyboard movement */
 	this.moveSens = 192;
@@ -96,12 +97,12 @@ var camera = new function()
 
         if (keys[16] || keys[32]) // SHIFT or SPACE - UP
         {
-            this.z += moveFactor;
+            this.pos.z += moveFactor;
         }
 
         if (keys[17]) // CRTL - DOWN
         {
-            this.z -= moveFactor;
+            this.pos.z -= moveFactor;
         }
 
         // If strafing and moving reduce speed to keep total move per frame constant
@@ -115,26 +116,26 @@ var camera = new function()
 		
         if (keys[87]) // W - FORWARD
         {
-            this.x += Math.cos(degToRad(this.yaw)) * moveFactor;
-            this.y += Math.sin(degToRad(this.yaw)) * moveFactor;
+            this.pos.x += Math.cos(degToRad(this.yaw)) * moveFactor;
+            this.pos.y += Math.sin(degToRad(this.yaw)) * moveFactor;
         }
 
         if (keys[83]) // S - BACKWARD
         {
-            this.x -= Math.cos(degToRad(this.yaw)) * moveFactor;
-            this.y -= Math.sin(degToRad(this.yaw)) * moveFactor;
+            this.pos.x -= Math.cos(degToRad(this.yaw)) * moveFactor;
+            this.pos.y -= Math.sin(degToRad(this.yaw)) * moveFactor;
         }
 
         if (keys[65]) // A - LEFT
         {
-            this.x += Math.cos(degToRad(this.yaw + 90.0)) * moveFactor;
-            this.y += Math.sin(degToRad(this.yaw + 90.0)) * moveFactor;
+            this.pos.x += Math.cos(degToRad(this.yaw + 90.0)) * moveFactor;
+            this.pos.y += Math.sin(degToRad(this.yaw + 90.0)) * moveFactor;
         }
 
         if (keys[68]) // D - RIGHT
         {
-            this.x += Math.cos(degToRad(this.yaw - 90.0)) * moveFactor;
-            this.y += Math.sin(degToRad(this.yaw - 90.0)) * moveFactor;
+            this.pos.x += Math.cos(degToRad(this.yaw - 90.0)) * moveFactor;
+            this.pos.y += Math.sin(degToRad(this.yaw - 90.0)) * moveFactor;
         }
 		
 		//console.log('camera.update() pos: ' + this.x + 'x ' + this.y + 'y ' + this.z + 'z pitch: ' + this.pitch + ' yaw: ' + this.yaw);
@@ -154,7 +155,7 @@ var camera = new function()
 		modelviewMatrix.rotate(-this.yaw + 90.0, 0, 0, 1);
 		
 		// Move
-		modelviewMatrix.translate(-this.x, -this.y, -this.z);
+		modelviewMatrix.translate(-this.pos.x, -this.pos.y, -this.pos.z);
 		
 		// Upload to shader
 		modelviewMatrix.setUniform(gl, modelviewMatrixLocation, false);

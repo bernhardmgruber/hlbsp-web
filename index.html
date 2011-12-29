@@ -62,8 +62,8 @@
 
 			attribute vec4 attribColor;
 			
-			varying lowp vec2 varTexCoord;
-			varying lowp vec2 varLightmapCoord;
+			varying highp vec2 varTexCoord;
+			varying highp vec2 varLightmapCoord;
 			varying lowp vec4 varColor;
 			
 			void main(void)
@@ -80,8 +80,8 @@
 			uniform sampler2D uniSamplerTexture; 
 			uniform sampler2D uniSamplerLightmap; 
 		
-			varying lowp vec2 varTexCoord;
-			varying lowp vec2 varLightmapCoord;
+			varying highp vec2 varTexCoord;
+			varying highp vec2 varLightmapCoord;
 			varying lowp vec4 varColor;
 		
 			void main(void)
@@ -92,11 +92,13 @@
 				else
 				{
 					// Use textures to determine fragment color
-					lowp vec4 texColor = texture2D(uniSamplerTexture, vec2(varTexCoord.s, varTexCoord.t));
-					lowp vec4 lightmapColor = texture2D(uniSamplerLightmap, vec2(varLightmapCoord.s, varLightmapCoord.t));
+					//lowp vec4 texColor = texture2D(uniSamplerTexture, varTexCoord);
+					lowp vec4 texColor = texture2D(uniSamplerTexture, varLightmapCoord);
+					lowp vec4 lightmapColor = texture2D(uniSamplerLightmap, varLightmapCoord);
 					
 					//gl_FragColor = lightmapColor;  
-					gl_FragColor = vec4(varLightmapCoord.s, varLightmapCoord.t, 1.0, 1.0);  
+					gl_FragColor = texColor;  
+					gl_FragColor += vec4(0.1, 0.1, 0.1, 1);
 				}
 			}  
 		</script>

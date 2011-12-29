@@ -236,19 +236,12 @@ function initShaders()
 	gl.uniform1i(samplerTextureLocation, 0);
 	
 	samplerLightmapLocation  = gl.getUniformLocation(shaderProgram, "uniSamplerLightmap");
-	gl.uniform1i(samplerTextureLocation, 1);
+	gl.uniform1i(samplerLightmapLocation, 1);
 	
 	gl.enableVertexAttribArray(positionLocation); // We will always need vertices
 	
 	return true;
 }  
-
-var square = 
-{
-	vertexBuffer : undefined,
-	colorBuffer : undefined
-};
-
 
 var coordSystem = 
 {
@@ -258,34 +251,6 @@ var coordSystem =
 
 function initBuffers()
 {  
-	/**
-	 * Square
-	 */
-	square.vertexBuffer = gl.createBuffer();  
-	gl.bindBuffer(gl.ARRAY_BUFFER, square.vertexBuffer);  
-		
-	var vertices = [  
-		 1.0,  1.0, 0.0,  
-		-1.0,  1.0, 0.0,  
-		 1.0, -1.0, 0.0,  
-		-1.0, -1.0, 0.0  
-	];  
-		
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW); 
-	
-	square.colorBuffer = gl.createBuffer();  
-	gl.bindBuffer(gl.ARRAY_BUFFER, square.colorBuffer);  
-	
-	var colors = [  
-		1.0,  1.0,  1.0,  1.0,    // white  
-		1.0,  0.0,  0.0,  1.0,    // red  
-		0.0,  1.0,  0.0,  1.0,    // green  
-		0.0,  0.0,  1.0,  1.0     // blue  
-	  ]; 
-		
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW); 
-	
-	
 	/**
 	 * Coord system
 	 */
@@ -341,6 +306,7 @@ function setStates()
 	log('Setting states ...');
 	
 	gl.clearColor(0, 0, 0, 1);
+	gl.enable(gl.DEPTH_TEST);
 }
 
 function resize()
@@ -374,7 +340,10 @@ function render()
 	camera.look();
 	//modelviewMatrix.translate(0,0,-10);
 	//modelviewMatrix.setUniform(gl, modelviewMatrixLocation, false);
-
+	
+	if(bsp.loaded)
+		bsp.render(camera.pos);
+		
 	gl.uniform1i(texUnitsInUseLocation, 0); // use colors for rendering
 	
 	// enable/disable the required attribute arrays
@@ -382,13 +351,6 @@ function render()
 	gl.disableVertexAttribArray(lightmapCoordLocation);  
 	gl.disableVertexAttribArray(normalLocation); 
 	gl.enableVertexAttribArray(colorLocation);
-	
-	gl.bindBuffer(gl.ARRAY_BUFFER, square.vertexBuffer);  
-	gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);  
-	gl.bindBuffer(gl.ARRAY_BUFFER, square.colorBuffer);  
-    gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0); 
-
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 	
 	if(showCoordSystem)
 	{
@@ -399,9 +361,6 @@ function render()
 		
 		gl.drawArrays(gl.LINES, 0, 12);
 	}
-	
-	if(bsp.loaded)
-		bsp.render(camera.pos);
 }
 
 var lastTime = new Date().getTime();

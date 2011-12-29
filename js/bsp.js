@@ -192,7 +192,8 @@ Bsp.prototype.renderFace = function(faceIndex)
 	
 	//console.log("Rendering face " + faceIndex);
 	
-	gl.bindTexture(gl.GL_TEXTURE_2D, this.lightmapLookup[faceIndex]);
+	//gl.activeTexture(gl.TEXTURE1);
+	gl.bindTexture(gl.TEXTURE_2D, this.lightmapLookup[faceIndex]);
 
 	gl.drawArrays(polygonMode ? gl.LINE_LOOP : gl.TRIANGLE_FAN, this.faceBufferRegions[faceIndex].start, this.faceBufferRegions[faceIndex].count);
 }
@@ -206,8 +207,6 @@ Bsp.prototype.preRender = function()
 	
 	this.faceBufferRegions = new Array(this.faces.length);
 	var elements = 0;
-	
-	console.log('PRE RENDER');
 
 	// for each face
 	for(var i = 0; i < this.faces.length; i++)
@@ -219,8 +218,6 @@ Bsp.prototype.preRender = function()
 			count : face.edges
 		};
 		
-		console.log('Face ' + i + ' start: ' + this.faceBufferRegions[i].start + ' count: ' + this.faceBufferRegions[i].count);
-	
 		var texInfo = this.textureInfos[face.textureInfo];
 		var plane = this.planes[face.plane];
 		
@@ -255,8 +252,6 @@ Bsp.prototype.preRender = function()
 			vertices.push(vertex.x);
 			vertices.push(vertex.y);
 			vertices.push(vertex.z);
-			
-			console.log(vertex.x + 'x ' + vertex.y + 'y ' + vertex.z + 'z');
 			
 			texCoords.push(texCoord.s);
 			texCoords.push(texCoord.t);
@@ -774,8 +769,13 @@ function createTextureFromImage(image)
 		image.height = canvas.height;  
 		image.src = canvas.toDataURL(); 
     }
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-    gl.generateMipmap(gl.TEXTURE_2D);
+	
+	$('body').append('<span>Lightmap (' + image.width + 'x' + image.height + ')</span>').append(image);
+	
+	//gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+	
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    //gl.generateMipmap(gl.TEXTURE_2D);
 
     return texture;
 }
@@ -811,6 +811,12 @@ Bsp.prototype.loadLightmaps = function(src)
         if (face.styles[0] != 0 || face.lightmapOffset == -1)
 		{
 			this.lightmapLookup[i] = 0;
+			
+			// create dummy lightmap coords
+			for (var j = 0; j < face.edges; j++)
+				faceCoords.push({ s: 0, t : 0});
+			this.lightmapCoordinates.push(faceCoords);
+			
 			continue;
 		}
 
@@ -914,19 +920,23 @@ Bsp.prototype.loadLightmaps = function(src)
 		var img = new Image(); 
 		img.width = width;
 		img.height = height;  
-		img.src = canvas.toDataURL(); 
+		img.src = canvas.toDataURL();
 		
 		var texture = createTextureFromImage(img);
 
-		gl.bindTexture(gl.TEXTURE_2D, texture);
+		//gl.bindTexture(gl.TEXTURE_2D, texture);
 
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.bindTexture(gl.TEXTURE_2D, null);
 
+		this.lightmapLookup[i] = texture;
+		this.lightmapCoordinates.push(faceCoords);
+		
 		loadedLightmaps++;
 		loadedData += width * height * 3;
-		
-		this.lightmapCoordinates.push(faceCoords);
     }
 	
     console.log('Loaded ' + loadedLightmaps + ' lightmaps, lightmapdatadiff: ' + (loadedData - this.header.lumps[LUMP_LIGHTING].length) + ' Bytes ');

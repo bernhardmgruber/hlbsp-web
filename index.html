@@ -88,7 +88,7 @@
 			{  
 				if(texUnitsInUse == 0)
 					// Use colors from a color buffer
-					gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+					gl_FragColor = varColor;
 				else
 				{
 					// Use textures to determine fragment color
@@ -96,7 +96,7 @@
 					lowp vec4 lightmapColor = texture2D(uniSamplerLightmap, vec2(varLightmapCoord.s, varLightmapCoord.t));
 					
 					//gl_FragColor = lightmapColor;  
-					gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);  
+					gl_FragColor = vec4(varLightmapCoord.s, varLightmapCoord.t, 1.0, 1.0);  
 				}
 			}  
 		</script>

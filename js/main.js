@@ -223,31 +223,22 @@ function initShaders()
     
 	// Get variable locations
 	projectionMatrixLocation = gl.getUniformLocation(shaderProgram, 'pMatrix');
-	
 	modelviewMatrixLocation = gl.getUniformLocation(shaderProgram, 'mvMatrix');
-	
 	texUnitsInUseLocation = gl.getUniformLocation(shaderProgram, 'texUnitsInUse');
 	
-	positionLocation = gl.getAttribLocation(shaderProgram, "attribPosition");  
-	gl.enableVertexAttribArray(positionLocation);  
-	
+	positionLocation = gl.getAttribLocation(shaderProgram, "attribPosition"); 
 	texCoordLocation = gl.getAttribLocation(shaderProgram, "attribTexCoord");  
-	//gl.enableVertexAttribArray(texCoordLocation);  
-	
-	lightmapCoordLocation = gl.getAttribLocation(shaderProgram, "attribLightmapCoord");  
-	//gl.enableVertexAttribArray(lightmapCoordLocation);  
-	
+	lightmapCoordLocation = gl.getAttribLocation(shaderProgram, "attribLightmapCoord"); 
 	normalLocation = gl.getAttribLocation(shaderProgram, "attribNormal");  
-	//gl.enableVertexAttribArray(normalLocation); 
-	
 	colorLocation = gl.getAttribLocation(shaderProgram, "attribColor");  
-	//gl.enableVertexAttribArray(colorLocation);
-	
+
 	samplerTextureLocation  = gl.getUniformLocation(shaderProgram, "uniSamplerTexture");
 	gl.uniform1i(samplerTextureLocation, 0);
 	
 	samplerLightmapLocation  = gl.getUniformLocation(shaderProgram, "uniSamplerLightmap");
 	gl.uniform1i(samplerTextureLocation, 1);
+	
+	gl.enableVertexAttribArray(positionLocation); // We will always need vertices
 	
 	return true;
 }  
@@ -386,10 +377,16 @@ function render()
 
 	gl.uniform1i(texUnitsInUseLocation, 0); // use colors for rendering
 	
+	// enable/disable the required attribute arrays
+	gl.disableVertexAttribArray(texCoordLocation);  	
+	gl.disableVertexAttribArray(lightmapCoordLocation);  
+	gl.disableVertexAttribArray(normalLocation); 
+	gl.enableVertexAttribArray(colorLocation);
+	
 	gl.bindBuffer(gl.ARRAY_BUFFER, square.vertexBuffer);  
 	gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);  
-	//gl.bindBuffer(gl.ARRAY_BUFFER, square.colorBuffer);  
-    //gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0); 
+	gl.bindBuffer(gl.ARRAY_BUFFER, square.colorBuffer);  
+    gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0); 
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 	
@@ -397,18 +394,14 @@ function render()
 	{
 		gl.bindBuffer(gl.ARRAY_BUFFER, coordSystem.vertexBuffer);  
 		gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-		//gl.bindBuffer(gl.ARRAY_BUFFER, coordSystem.colorBuffer);  
-		//gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);  
+		gl.bindBuffer(gl.ARRAY_BUFFER, coordSystem.colorBuffer);  
+		gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);  
 		
 		gl.drawArrays(gl.LINES, 0, 12);
 	}
 	
 	if(bsp.loaded)
-	{
-		//gl.uniform1i(texUnitsInUseLocation, 2); // use textures here (tex + lightmap)
-	
 		bsp.render(camera.pos);
-	}
 }
 
 var lastTime = new Date().getTime();

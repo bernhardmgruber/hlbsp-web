@@ -90,18 +90,20 @@ Bsp.prototype.traverseTree = function(pos, nodeIndex)
  */
 Bsp.prototype.render = function(cameraPos)
 {
-	//console.log("BEGIN RENDER");
-
-	// Get the leaf where the camera is in
-	var cameraLeaf = this.traverseTree(cameraPos);
-	//console.log("Camera in leaf " + cameraLeaf);
+	gl.uniform1i(texUnitsInUseLocation, 2); // use textures here (tex + lightmap)
+	
+	// enable/disable the required attribute arrays
+	gl.enableVertexAttribArray(texCoordLocation);  	
+	gl.enableVertexAttribArray(lightmapCoordLocation);  
+	gl.enableVertexAttribArray(normalLocation); 
+	gl.disableVertexAttribArray(colorLocation);
 	
 	// Bind the vertex buffer
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);  
 	gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 	
 	// Bind texture coordinate buffer
-	/*gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
 	gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
 	
 	// Bind lightmap coordinate buffer
@@ -110,12 +112,14 @@ Bsp.prototype.render = function(cameraPos)
 	
 	// Bind normal coordinate buffer
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
-	gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);*/
+	gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
+	
+	// Get the leaf where the camera is in
+	var cameraLeaf = this.traverseTree(cameraPos);
+	//console.log("Camera in leaf " + cameraLeaf);
 	
 	// Start the render traversal
-	//this.renderNode(0, cameraLeaf, cameraPos);
-	
-	gl.drawArrays(gl.POINTS, 0, 606);
+	this.renderNode(0, cameraLeaf, cameraPos);
 }
 
 Bsp.prototype.renderNode = function(nodeIndex, cameraLeaf, cameraPos)
@@ -188,10 +192,9 @@ Bsp.prototype.renderFace = function(faceIndex)
 	
 	//console.log("Rendering face " + faceIndex);
 	
-	//gl.bindTexture(gl.GL_TEXTURE_2D, this.lightmapLookup[faceIndex]);
+	gl.bindTexture(gl.GL_TEXTURE_2D, this.lightmapLookup[faceIndex]);
 
-	//gl.drawArrays(polygonMode ? gl.LINE_LOOP : gl.TRIANGLE_FAN, this.faceBufferRegions[faceIndex].start, this.faceBufferRegions[faceIndex].count);
-	gl.drawArrays(gl.POINTS, 0, 606);
+	gl.drawArrays(polygonMode ? gl.LINE_LOOP : gl.TRIANGLE_FAN, this.faceBufferRegions[faceIndex].start, this.faceBufferRegions[faceIndex].count);
 }
 
 Bsp.prototype.preRender = function()

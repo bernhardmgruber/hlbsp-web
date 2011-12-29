@@ -770,8 +770,6 @@ function createTextureFromImage(image)
 		image.src = canvas.toDataURL(); 
     }
 	
-	$('body').append('<span>Lightmap (' + image.width + 'x' + image.height + ')</span>').append(image);
-	
 	//gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 	
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
@@ -804,6 +802,9 @@ Bsp.prototype.loadLightmaps = function(src)
 
     for (var i = 0; i < this.faces.length; i++)
     {
+		if(i == 35)
+			console.log("LOL");
+	
 		var face = this.faces[i];
 		
 		var faceCoords = new Array();
@@ -838,13 +839,13 @@ Bsp.prototype.loadLightmaps = function(src)
 			else
 				vertex = this.vertices[this.edges[-edgeIndex].vertices[1]];
 
-			var u = dotProduct(texInfo.s, vertex) + texInfo.sShift;
+			var u = Math.round(dotProduct(texInfo.s, vertex) + texInfo.sShift);
 			if (u < minU)
 				minU = u;
 			if (u > maxU)
 				maxU = u;
 
-			var v = dotProduct(texInfo.t, vertex) + texInfo.tShift;
+			var v = Math.round(dotProduct(texInfo.t, vertex) + texInfo.tShift);
 			if (v < minV)
 				minV = v;
 			if (v > maxV)
@@ -879,8 +880,8 @@ Bsp.prototype.loadLightmaps = function(src)
 			else
 				vertex = this.vertices[this.edges[-edgeIndex].vertices[1]];
 
-			var u = dotProduct(texInfo.s, vertex) + texInfo.sShift;
-			var v = dotProduct(texInfo.t, vertex) + texInfo.tShift;
+			var u = Math.round(dotProduct(texInfo.s, vertex) + texInfo.sShift);
+			var v = Math.round(dotProduct(texInfo.t, vertex) + texInfo.tShift);
 
 			var lightMapU = midTexU + (u - midPolyU) / 16.0;
 			var lightMapV = midTexV + (v - midPolyV) / 16.0;
@@ -921,6 +922,8 @@ Bsp.prototype.loadLightmaps = function(src)
 		img.width = width;
 		img.height = height;  
 		img.src = canvas.toDataURL();
+		
+		//$('body').append('<span>Lightmap ' + i + ' (' + img.width + 'x' + img.height + ')</span>').append(img);
 		
 		var texture = createTextureFromImage(img);
 

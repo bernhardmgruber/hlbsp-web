@@ -6,6 +6,9 @@
  */
 function Bsp()
 {
+	//
+	// Data loaded form the bsp file
+	//
     var header;          
 
     var nodes;
@@ -22,13 +25,30 @@ function Bsp()
     var models;
     var clipNodes;
 	
+	//
+	// Calculated
+	//
+
+	/** Array (for each face) of arrays (for each vertex of a face) of JSONs holding s and t coordinate. */
+	var textureCoordinates;
+	var lightmapCoordinates;
+	
+	/** Stores the texture IDs of the lightmaps for each face */
+	var lightmapLookup;
+	
+	//
+	// Buffers
+	//
+	var vertexBuffer;
+	var texCoordBuffer;
+	var lightmapCoordBuffer;
+	var normalBuffer;
+	
+	/** Holds start index and count of indexes into the buffers for each face. Array of JSONs { start, count } */
+	var faceBufferRegions;
+	
 	/** If set to true, all resources are ready to render */
 	var loaded = false;
-	
-	var vertexBuffer;
-	var indexBuffer;
-	
-	var texCoordBuffer;
 };
 
 /**
@@ -70,20 +90,32 @@ Bsp.prototype.traverseTree = function(pos, nodeIndex)
  */
 Bsp.prototype.render = function(cameraPos)
 {
+	//console.log("BEGIN RENDER");
+
 	// Get the leaf where the camera is in
 	var cameraLeaf = this.traverseTree(cameraPos);
-	console.log("Camera in leaf " + cameraLeaf);
+	//console.log("Camera in leaf " + cameraLeaf);
 	
 	// Bind the vertex buffer
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);  
-	gl.vertexAttribPointer(vertexPositionLocation, 3, gl.FLOAT, false, 0, 0);
+	gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 	
-	// Bind the index buffer
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+	// Bind texture coordinate buffer
+	/*gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+	gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+	
+	// Bind lightmap coordinate buffer
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.lightmapCoordBuffer);
+	gl.vertexAttribPointer(lightmapCoordLocation, 2, gl.FLOAT, false, 0, 0);
+	
+	// Bind normal coordinate buffer
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
+	gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);*/
 	
 	// Start the render traversal
-	this.renderNode(0, cameraLeaf, cameraPos);
+	//this.renderNode(0, cameraLeaf, cameraPos);
 	
+	gl.drawArrays(gl.POINTS, 0, 606);
 }
 
 Bsp.prototype.renderNode = function(nodeIndex, cameraLeaf, cameraPos)
@@ -154,101 +186,105 @@ Bsp.prototype.renderFace = function(faceIndex)
 	// if the light map offset is not -1 and the lightmap lump is not empty, there are lightmaps
     var lightmapAvailable = face.lightmapOffset != -1 && this.header.lumps[LUMP_LIGHTING].length > 0;
 	
-	// Prepare the index buffer for the next pass
-	var indexes = new Array();
-
 	//console.log("Rendering face " + faceIndex);
 	
-	//if(faceIndex == 76)
-	//	console.log("LOL");
+	//gl.bindTexture(gl.GL_TEXTURE_2D, this.lightmapLookup[faceIndex]);
+
+	//gl.drawArrays(polygonMode ? gl.LINE_LOOP : gl.TRIANGLE_FAN, this.faceBufferRegions[faceIndex].start, this.faceBufferRegions[faceIndex].count);
+	gl.drawArrays(gl.POINTS, 0, 606);
+}
+
+Bsp.prototype.preRender = function()
+{
+	var vertices = new Array();
+	var texCoords = new Array();
+	var lightmapCoords = new Array();
+	var normals = new Array();
 	
-    /*if (lightmapAvailable)
-    {
-        // We need both texture units for textures and lightmaps
-
-        // base texture
-        glActiveTexture(GL_TEXTURE0_ARB);
-        glBindTexture(GL_TEXTURE_2D, pnTextureLookUp[texInfo.iMiptex]);
-
-        // light map
-        glActiveTexture(GL_TEXTURE1_ARB);
-        glBindTexture(GL_TEXTURE_2D, pnLightmapLookUp[iFace]);
-
-        glBegin(GL_TRIANGLE_FAN);
-        for (int i=0; i<pFaces[iFace].nEdges; i++)
-        {
-            glMultiTexCoord2f(GL_TEXTURE0_ARB, pFaceTexCoords[iFace].pTexCoords[i].fS, pFaceTexCoords[iFace].pTexCoords[i].fT);
-            glMultiTexCoord2f(GL_TEXTURE1_ARB, pFaceTexCoords[iFace].pLightmapCoords[i].fS, pFaceTexCoords[iFace].pLightmapCoords[i].fT);
-
-            // normal
-            VECTOR3D vNormal = pPlanes[pFaces[iFace].iPlane].vNormal;
-            if (pFaces[iFace].nPlaneSide)
-                vNormal = vNormal * -1;
-            glNormal3f(vNormal.x, vNormal.y, vNormal.z);
-
-            int iEdge = pSurfEdges[pFaces[iFace].iFirstEdge + i]; // This gives the index into the edge lump
-
-            if (iEdge > 0)
-            {
-                glVertex3f(pVertices[pEdges[iEdge].iVertex[0]].x, pVertices[pEdges[iEdge].iVertex[0]].y, pVertices[pEdges[iEdge].iVertex[0]].z);
-            }
-            else
-            {
-                iEdge *= -1;
-                glVertex3f(pVertices[pEdges[iEdge].iVertex[1]].x, pVertices[pEdges[iEdge].iVertex[1]].y, pVertices[pEdges[iEdge].iVertex[1]].z);
-            }
-        }
-        glEnd();
-    }
-    else
-    {*/
+	this.faceBufferRegions = new Array(this.faces.length);
+	var elements = 0;
 	
-	// We need one texture unit for either textures or lightmaps
-	/*glActiveTexture(GL_TEXTURE0_ARB);
+	console.log('PRE RENDER');
 
-	if(g_bLightmaps)
-		glBindTexture(GL_TEXTURE_2D, pnLightmapLookUp[iFace]);
-	else
-		glBindTexture(GL_TEXTURE_2D, pnTextureLookUp[pTextureInfos[pFaces[iFace].iTextureInfo].iMiptex]);
-
-	glBegin(GL_TRIANGLE_FAN);*/
-	for (var i = 0; i < face.edges; i++)
+	// for each face
+	for(var i = 0; i < this.faces.length; i++)
 	{
-		/*if(g_bLightmaps)
-			glTexCoord2f(pFaceTexCoords[iFace].pLightmapCoords[i].fS, pFaceTexCoords[iFace].pLightmapCoords[i].fT);
-		else
-			glTexCoord2f(pFaceTexCoords[iFace].pTexCoords[i].fS, pFaceTexCoords[iFace].pTexCoords[i].fT);
-
-		// normal
-		VECTOR3D vNormal = pPlanes[pFaces[iFace].iPlane].vNormal;
-		if (pFaces[iFace].nPlaneSide)
-			vNormal = vNormal * -1;
-		glNormal3f(vNormal.x, vNormal.y, vNormal.z);*/
-
-		var edgeIndex = this.surfEdges[face.firstEdge + i]; // This gives the index into the edge lump
-
-		if (edgeIndex > 0)
+		var face = this.faces[i];
+	
+		this.faceBufferRegions[i] = {
+			start : elements,
+			count : face.edges
+		};
+		
+		console.log('Face ' + i + ' start: ' + this.faceBufferRegions[i].start + ' count: ' + this.faceBufferRegions[i].count);
+	
+		var texInfo = this.textureInfos[face.textureInfo];
+		var plane = this.planes[face.plane];
+		
+		var normal = plane.normal;
+		
+		var faceTexCoords = this.textureCoordinates[i];
+		var faceLightmapCoords = this.lightmapCoordinates[i];
+		
+		for (var j = 0; j < face.edges; j++)
 		{
-			var edge = this.edges[edgeIndex];
-			var vertexIndex = edge.vertices[0];
-			indexes.push(vertexIndex);
-			//glVertex3f(pVertices[vertexIndex].x, pVertices[vertexIndex].y, pVertices[vertexIndex].z);
-		}
-		else
-		{
-			edgeIndex *= -1;
-			var edge = this.edges[edgeIndex];
-			var vertexIndex = edge.vertices[1];
-			indexes.push(vertexIndex);
-			//glVertex3f(pVertices[vertexIndex].x, pVertices[vertexIndex].y, pVertices[vertexIndex].z);
+			var edgeIndex = this.surfEdges[face.firstEdge + j]; // This gives the index into the edge lump
+
+			var vertexIndex;
+			if (edgeIndex > 0)
+			{
+				var edge = this.edges[edgeIndex];
+				vertexIndex = edge.vertices[0];
+			}
+			else
+			{
+				edgeIndex *= -1;
+				var edge = this.edges[edgeIndex];
+				vertexIndex = edge.vertices[1];
+			}
+			
+			var vertex = this.vertices[vertexIndex];
+			
+			var texCoord = faceTexCoords[j];
+			var lightmapCoord = faceLightmapCoords[j];
+			
+			// Write to buffers
+			vertices.push(vertex.x);
+			vertices.push(vertex.y);
+			vertices.push(vertex.z);
+			
+			console.log(vertex.x + 'x ' + vertex.y + 'y ' + vertex.z + 'z');
+			
+			texCoords.push(texCoord.s);
+			texCoords.push(texCoord.t);
+			
+			lightmapCoords.push(lightmapCoord.s);
+			lightmapCoords.push(lightmapCoord.t);
+			
+			normals.push(normal.x);
+			normals.push(normal.y);
+			normals.push(normal.z);
+			
+			elements += 1;
 		}
 	}
-	//glEnd();
-	
-	// Upload the collected vertex indexes to the index buffer and render them
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexes), gl.DYNAMIC_DRAW);
 
-	gl.drawElements(polygonMode ? gl.LINE_LOOP : gl.TRIANGLE_FAN, indexes.length, gl.UNSIGNED_SHORT, 0);
+	// Create ALL the buffers !!!
+	this.vertexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW); 
+	
+	this.texCoordBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW); 
+	
+	this.lightmapCoordBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.lightmapCoordBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lightmapCoords), gl.STATIC_DRAW); 
+	
+	this.normalBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW); 
 }
 
 /**
@@ -271,7 +307,7 @@ Bsp.prototype.loadBSP = function(arrayBuffer)
     this.readLeaves(src);
     this.readMarkSurfaces(src);
     this.readPlanes(src);
-    this.readVertices(src); // also creates vertexBuffer here
+    this.readVertices(src);
     this.readEdges(src);
     this.readFaces(src);
     this.readSurfEdges(src);
@@ -281,19 +317,17 @@ Bsp.prototype.loadBSP = function(arrayBuffer)
     this.readClipNodes(src);
 	
 	this.loadEntities(src);
-	this.loadLightmaps(src);
+	this.loadTextures(src); // plus coordinates
+	this.loadLightmaps(src);  // plus coordinates
 	this.loadVIS(src);
 	
-	// ====================================================================================================
-	// =                                          Process input                                           =
-	// ====================================================================================================
-	
-	this.generateTextureCoordinates();
+
 	//this.loadDecals();
 	//this.loadSky();
+
 	
-	// MISC
-	this.indexBuffer = gl.createBuffer();
+	// FINALLY create buffers for rendering
+	this.preRender();
     
     console.log('Finished loading BSP');
 	this.loaded = true;
@@ -457,11 +491,6 @@ Bsp.prototype.readVertices = function(src)
 		
         this.vertices.push(vertex);
     }
-	
-	this.vertexBuffer = gl.createBuffer();  
-	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);  
-		
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(src.buffer, this.header.lumps[LUMP_VERTICES].offset, this.vertices.length * 3), gl.STATIC_DRAW); 
     
     console.log('Read ' + this.vertices.length + ' Vertices');
 }
@@ -603,7 +632,7 @@ Bsp.prototype.readTextureInfos = function(src)
         
         texInfo.flags = src.readULong();
         
-        this.textureInfos.push(src.readLong());
+        this.textureInfos.push(texInfo);
     }
     
     console.log('Read ' + this.textureInfos.length + ' TextureInfos');
@@ -677,42 +706,227 @@ Bsp.prototype.loadEntities = function(src)
 
 }
 
-Bsp.prototype.loadLightmaps = function(src)
-{
-
-}
-
 Bsp.prototype.loadVIS = function(src)
 {
 
 }
 
-Bsp.prototype.generateTextureCoordinates = function()
+Bsp.prototype.loadTextures = function()
 {
+	this.textureCoordinates = new Array();
+
     for (var i = 0; i < this.faces.length; i++)
     {
 		var face = this.faces[i];
 		var texInfo = this.textureInfos[face.textureInfo];
+		
+		var faceCoords = new Array();
 
         for (var j = 0; j < face.edges; j++)
         {
             var edgeIndex = this.surfEdges[face.firstEdge + j];
 
+			var vertexIndex;
             if (edgeIndex > 0)
             {
 				var edge = this.edges[edgeIndex];
-                pFaceTexCoords[i].pTexCoords[j].fS = (DotProduct(pVertices[edge.iVertex[0]], curTexInfo.vS) + curTexInfo.fSShift) / pMipTextures[curTexInfo.iMiptex].nWidth;
-                pFaceTexCoords[i].pTexCoords[j].fT = (DotProduct(pVertices[edge.iVertex[0]], curTexInfo.vT) + curTexInfo.fTShift) / pMipTextures[curTexInfo.iMiptex].nHeight;
+				vertexIndex = edge.vertices[0];
             }
             else
             {
                 edgeIndex *= -1;
 				var edge = this.edges[edgeIndex];
-                pFaceTexCoords[i].pTexCoords[j].fS = (DotProduct(pVertices[edge.iVertex[1]], curTexInfo.vS) + curTexInfo.fSShift) / pMipTextures[curTexInfo.iMiptex].nWidth;
-                pFaceTexCoords[i].pTexCoords[j].fT = (DotProduct(pVertices[edge.iVertex[1]], curTexInfo.vT) + curTexInfo.fTShift) / pMipTextures[curTexInfo.iMiptex].nHeight;
+				vertexIndex = edge.vertices[1];
             }
+			
+			var vertex = this.vertices[vertexIndex];
+			var mipTexture = this.mipTextures[texInfo.mipTexture];
+			
+			var coord = {
+				s : (dotProduct(vertex, texInfo.s) + texInfo.sShift) / mipTexture.width,
+                t : (dotProduct(vertex, texInfo.t) + texInfo.tShift) / mipTexture.height
+			};
+			
+			faceCoords.push(coord);
         }
+		
+		this.textureCoordinates.push(faceCoords);
     }
+}
+
+function createTextureFromImage(image)
+{
+    var texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    if (!isPowerOfTwo(image.width) || !isPowerOfTwo(image.height))
+	{
+        // Scale up the texture to the next highest power of two dimensions.
+        var canvas = document.createElement("canvas");
+        canvas.width = nextHighestPowerOfTwo(image.width);
+        canvas.height = nextHighestPowerOfTwo(image.height);
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0, image.width, image.height);
+		
+		image.width = canvas.width;
+		image.height = canvas.height;  
+		image.src = canvas.toDataURL(); 
+    }
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.generateMipmap(gl.TEXTURE_2D);
+
+    return texture;
+}
+ 
+function isPowerOfTwo(x)
+{
+    return (x & (x - 1)) == 0;
+}
+ 
+function nextHighestPowerOfTwo(x)
+{
+    --x;
+    for (var i = 1; i < 32; i <<= 1) {
+        x = x | x >> i;
+    }
+    return x + 1;
+}
+
+Bsp.prototype.loadLightmaps = function(src)
+{
+	this.lightmapCoordinates = new Array();
+	this.lightmapLookup = new Array(this.faces.length);
+	
+	var loadedData = 0;
+    var loadedLightmaps = 0;
+
+    for (var i = 0; i < this.faces.length; i++)
+    {
+		var face = this.faces[i];
+		
+		var faceCoords = new Array();
+	
+        if (face.styles[0] != 0 || face.lightmapOffset == -1)
+		{
+			this.lightmapLookup[i] = 0;
+			continue;
+		}
+
+		/* *********** QRAD ********** */
+
+		var minU = 999999.0;
+		var minV = 999999.0;
+		var maxU = -99999.0;
+		var maxV = -99999.0;
+
+		var texInfo = this.textureInfos[face.textureInfo];
+		
+		for (var j = 0; j < face.edges; j++)
+		{
+			var edgeIndex = this.surfEdges[face.firstEdge + j];
+			var vertex;
+			if (edgeIndex >= 0)
+				vertex = this.vertices[this.edges[edgeIndex].vertices[0]];
+			else
+				vertex = this.vertices[this.edges[-edgeIndex].vertices[1]];
+
+			var u = dotProduct(texInfo.s, vertex) + texInfo.sShift;
+			if (u < minU)
+				minU = u;
+			if (u > maxU)
+				maxU = u;
+
+			var v = dotProduct(texInfo.t, vertex) + texInfo.tShift;
+			if (v < minV)
+				minV = v;
+			if (v > maxV)
+				maxV = v;
+		}
+
+		var texMinU = Math.floor(minU / 16.0);
+		var texMinV = Math.floor(minV / 16.0);
+		var texMaxU = Math.ceil(maxU / 16.0);
+		var texMaxV = Math.ceil(maxV / 16.0);
+
+		var width = Math.floor((texMaxU - texMinU) + 1);
+		var height = Math.floor((texMaxV - texMinV) + 1);
+
+		/* *********** end QRAD ********* */
+
+		/* ********** http://www.gamedev.net/community/forums/topic.asp?topic_id=538713 (last refresh: 20.02.2010) ********** */
+
+		var midPolyU = (minU + maxU) / 2.0;
+		var midPolyV = (minV + maxV) / 2.0;
+		var midTexU = width / 2.0;
+		var midTexV = height / 2.0;
+		
+		var coord;
+
+		for (var j = 0; j < face.edges; ++j)
+		{
+			var edgeIndex = this.surfEdges[face.firstEdge + j];
+			var vertex;
+			if (edgeIndex >= 0)
+				vertex = this.vertices[this.edges[edgeIndex].vertices[0]];
+			else
+				vertex = this.vertices[this.edges[-edgeIndex].vertices[1]];
+
+			var u = dotProduct(texInfo.s, vertex) + texInfo.sShift;
+			var v = dotProduct(texInfo.t, vertex) + texInfo.tShift;
+
+			var lightMapU = midTexU + (u - midPolyU) / 16.0;
+			var lightMapV = midTexV + (v - midPolyV) / 16.0;
+
+			coord = {
+				s : lightMapU / width,
+				t : lightMapV / height
+			}
+			
+			faceCoords.push(coord);
+		}
+
+		/* ********** end http://www.gamedev.net/community/forums/topic.asp?topic_id=538713 ********** */
+
+		var canvas = document.createElement("canvas");
+		canvas.width = width;
+		canvas.height = height;
+		var ctx = canvas.getContext("2d");
+		
+		var pixels = new Uint8Array(src.buffer, this.header.lumps[LUMP_LIGHTING].offset + face.lightmapOffset, width * height * 3)
+		
+		var imgData = ctx.createImageData(width, height);
+		for (var x = 0; x < width; x++)
+		{
+			for (var y = 0; y < height; y++)
+			{
+				var index = (x + y * width) * 4;
+				var lmIndex = (x + y * width) * 3;
+				imgData.data[index + 0] = pixels[lmIndex + 0];
+				imgData.data[index + 1] = pixels[lmIndex + 1];
+				imgData.data[index + 2] = pixels[lmIndex + 2];
+				imgData.data[index + 3] = 255;
+			}
+		}
+		ctx.putImageData(imgData, 0, 0);
+		
+		var img = new Image(); 
+		img.width = width;
+		img.height = height;  
+		img.src = canvas.toDataURL(); 
+		
+		var texture = createTextureFromImage(img);
+
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+		loadedLightmaps++;
+		loadedData += width * height * 3;
+		
+		this.lightmapCoordinates.push(faceCoords);
+    }
+	
+    console.log('Loaded ' + loadedLightmaps + ' lightmaps, lightmapdatadiff: ' + (loadedData - this.header.lumps[LUMP_LIGHTING].length) + ' Bytes ');
 }
 
 var bsp = new Bsp();

@@ -35,7 +35,7 @@ function handleBSPFileSelection(event)
 
 // SOME GLOBAL EVENT VARS
 var polygonMode = false;
-var coordSystem = false;
+var showCoordSystem = false;
 
 /**
  * This function is called when the document has finished loading and binds all event handlers to their corresponding objects.
@@ -54,8 +54,8 @@ function setEventHandlers()
 				console.log('Polygonmode: ' + (polygonMode ? 'Wireframe' : 'Fill'));
 				break;
 			case 67: // C
-				coordSystem = !coordSysteM;
-				console.log('Coordsystem ' + (coordSystem ? 'enabled' : 'disabled'));
+				showCoordSystem = !showCoordSystem;
+				console.log('Coordsystem ' + (showCoordSystem ? 'enabled' : 'disabled'));
 				break;
 		}
 	};

@@ -185,11 +185,18 @@ function getShader(gl, id)
 	} 
 }
 
-var vertexPositionLocation;
-var vertexColorLocation;
-
 var projectionMatrixLocation;
 var modelviewMatrixLocation;
+var texUnitsInUseLocation;
+
+var positionLocation;
+var texCoordLocation;
+var lightmapCoordLocation;
+var normalLocation;
+var colorLocation;
+
+var samplerTextureLocation;
+var samplerLightmapLocation;
 
 function initShaders()
 {  
@@ -216,14 +223,31 @@ function initShaders()
     
 	// Get variable locations
 	projectionMatrixLocation = gl.getUniformLocation(shaderProgram, 'pMatrix');
+	
 	modelviewMatrixLocation = gl.getUniformLocation(shaderProgram, 'mvMatrix');
 	
-	vertexPositionLocation = gl.getAttribLocation(shaderProgram, "vertexPosition");  
-	gl.enableVertexAttribArray(vertexPositionLocation);  
+	texUnitsInUseLocation = gl.getUniformLocation(shaderProgram, 'texUnitsInUse');
 	
-	vertexColorLocation = gl.getAttribLocation(shaderProgram, "vertexColor");  
-	gl.enableVertexAttribArray(vertexColorLocation);  
+	positionLocation = gl.getAttribLocation(shaderProgram, "attribPosition");  
+	gl.enableVertexAttribArray(positionLocation);  
 	
+	texCoordLocation = gl.getAttribLocation(shaderProgram, "attribTexCoord");  
+	//gl.enableVertexAttribArray(texCoordLocation);  
+	
+	lightmapCoordLocation = gl.getAttribLocation(shaderProgram, "attribLightmapCoord");  
+	//gl.enableVertexAttribArray(lightmapCoordLocation);  
+	
+	normalLocation = gl.getAttribLocation(shaderProgram, "attribNormal");  
+	//gl.enableVertexAttribArray(normalLocation); 
+	
+	colorLocation = gl.getAttribLocation(shaderProgram, "attribColor");  
+	//gl.enableVertexAttribArray(colorLocation);
+	
+	samplerTextureLocation  = gl.getUniformLocation(shaderProgram, "uniSamplerTexture");
+	gl.uniform1i(samplerTextureLocation, 0);
+	
+	samplerLightmapLocation  = gl.getUniformLocation(shaderProgram, "uniSamplerLightmap");
+	gl.uniform1i(samplerTextureLocation, 1);
 	
 	return true;
 }  
@@ -360,23 +384,31 @@ function render()
 	//modelviewMatrix.translate(0,0,-10);
 	//modelviewMatrix.setUniform(gl, modelviewMatrixLocation, false);
 
+	gl.uniform1i(texUnitsInUseLocation, 0); // use colors for rendering
+	
 	gl.bindBuffer(gl.ARRAY_BUFFER, square.vertexBuffer);  
-	gl.vertexAttribPointer(vertexPositionLocation, 3, gl.FLOAT, false, 0, 0);  
-	gl.bindBuffer(gl.ARRAY_BUFFER, square.colorBuffer);  
-    gl.vertexAttribPointer(vertexColorLocation, 4, gl.FLOAT, false, 0, 0); 
+	gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);  
+	//gl.bindBuffer(gl.ARRAY_BUFFER, square.colorBuffer);  
+    //gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0); 
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 	
-	
-	gl.bindBuffer(gl.ARRAY_BUFFER, coordSystem.vertexBuffer);  
-	gl.vertexAttribPointer(vertexPositionLocation, 3, gl.FLOAT, false, 0, 0);
-	gl.bindBuffer(gl.ARRAY_BUFFER, coordSystem.colorBuffer);  
-	gl.vertexAttribPointer(vertexColorLocation, 4, gl.FLOAT, false, 0, 0);  
-	
-	gl.drawArrays(gl.LINES, 0, 12);
+	if(showCoordSystem)
+	{
+		gl.bindBuffer(gl.ARRAY_BUFFER, coordSystem.vertexBuffer);  
+		gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
+		//gl.bindBuffer(gl.ARRAY_BUFFER, coordSystem.colorBuffer);  
+		//gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);  
+		
+		gl.drawArrays(gl.LINES, 0, 12);
+	}
 	
 	if(bsp.loaded)
+	{
+		//gl.uniform1i(texUnitsInUseLocation, 2); // use textures here (tex + lightmap)
+	
 		bsp.render(camera.pos);
+	}
 }
 
 var lastTime = new Date().getTime();
@@ -410,7 +442,7 @@ function mainloop()
 	render();
 	
 	// Start next frame
-	setTimeout(mainloop, 50);
+	setTimeout(mainloop, 100);
 }
 
 function main()

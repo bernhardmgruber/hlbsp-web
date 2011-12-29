@@ -30,7 +30,7 @@ var camera = new function()
 	this.lookSens = 0.25;
 	
 	/** Move sensitivity. Applies to keyboard movement */
-	this.moveSens = 192;
+	this.moveSens = 400;
 	
 	this.lastX;
 	this.lastY;
@@ -107,9 +107,6 @@ var camera = new function()
 
         // If strafing and moving reduce speed to keep total move per frame constant
 		var strafing = (keys[87] || keys[83]) && (keys[65] || keys[68]);
-		
-		if(strafing)
-			log("Strafing...");
 			
 		if(strafing)
 			moveFactor = Math.sqrt((moveFactor * moveFactor) / 2.0);
@@ -138,7 +135,7 @@ var camera = new function()
             this.pos.y += Math.sin(degToRad(this.yaw - 90.0)) * moveFactor;
         }
 		
-		//console.log('camera.update() pos: ' + this.x + 'x ' + this.y + 'y ' + this.z + 'z pitch: ' + this.pitch + ' yaw: ' + this.yaw);
+		//console.log('camera.update() pos: ' + this.pos.x + 'x ' + this.pos.y + 'y ' + this.pos.z + 'z pitch: ' + this.pitch + ' yaw: ' + this.yaw);
 	}
 	
 	/**

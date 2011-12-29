@@ -53,26 +53,51 @@
 		
 		<script id="shader-vs" type="x-shader/x-vertex">  
 			uniform mat4 mvMatrix;  
-			uniform mat4 pMatrix;  
+			uniform mat4 pMatrix;
 			
-			attribute vec3 vertexPosition;
-			attribute vec4 vertexColor;
+			attribute vec3 attribPosition;
+			attribute vec2 attribTexCoord;
+			attribute vec2 attribLightmapCoord;
+			attribute vec3 attribNormal; // currently not used
+
+			attribute vec4 attribColor;
 			
-			varying lowp vec4 color;
+			varying lowp vec2 varTexCoord;
+			varying lowp vec2 varLightmapCoord;
+			varying lowp vec4 varColor;
 			
 			void main(void)
 			{  
-				//color = vertexColor;
-				color = vec4(1.0, 0.0, 0.0, 1.0);
-				gl_Position = pMatrix * mvMatrix * vec4(vertexPosition, 1.0);  
+				varColor = attribColor;
+				varTexCoord = attribTexCoord;
+				varLightmapCoord = attribLightmapCoord;
+				gl_Position = pMatrix * mvMatrix * vec4(attribPosition, 1.0);  
 			}  
 		</script>  
 		<script id="shader-fs" type="x-shader/x-fragment">
-			varying lowp vec4 color;
+			uniform int texUnitsInUse; // The number of texture units in use
+		
+			uniform sampler2D uniSamplerTexture; 
+			uniform sampler2D uniSamplerLightmap; 
+		
+			varying lowp vec2 varTexCoord;
+			varying lowp vec2 varLightmapCoord;
+			varying lowp vec4 varColor;
 		
 			void main(void)
 			{  
-				gl_FragColor = color;  
+				if(texUnitsInUse == 0)
+					// Use colors from a color buffer
+					gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+				else
+				{
+					// Use textures to determine fragment color
+					lowp vec4 texColor = texture2D(uniSamplerTexture, vec2(varTexCoord.s, varTexCoord.t));
+					lowp vec4 lightmapColor = texture2D(uniSamplerLightmap, vec2(varLightmapCoord.s, varLightmapCoord.t));
+					
+					//gl_FragColor = lightmapColor;  
+					gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);  
+				}
 			}  
 		</script>
 	</body>

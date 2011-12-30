@@ -830,30 +830,6 @@ Bsp.prototype.loadTextures = function(src)
     }
 }
 
-function createTextureFromImage(image)
-{
-    var texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    if (!isPowerOfTwo(image.width) || !isPowerOfTwo(image.height))
-	{
-        // Scale up the texture to the next highest power of two dimensions.
-        var canvas = document.createElement("canvas");
-        canvas.width = nextHighestPowerOfTwo(image.width);
-        canvas.height = nextHighestPowerOfTwo(image.height);
-        var ctx = canvas.getContext("2d");
-        ctx.drawImage(image, 0, 0, image.width, image.height);
-		
-		image.width = canvas.width;
-		image.height = canvas.height;  
-		image.src = canvas.toDataURL(); 
-    }
-	
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-    gl.generateMipmap(gl.TEXTURE_2D);
-
-    return texture;
-}
- 
 function isPowerOfTwo(x)
 {
     return (x & (x - 1)) == 0;
@@ -1016,12 +992,34 @@ Bsp.prototype.loadLightmaps = function(src)
 		
 		//$('body').append('<span>Lightmap ' + i + ' (' + img.width + 'x' + img.height + ')</span>').append(img);
 		
-		var texture = createTextureFromImage(img);
+		// Scale image
+		var texture = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		
+		if (!isPowerOfTwo(img.width) || !isPowerOfTwo(img.height))
+		{
+			// Scale up the texture to the next highest power of two dimensions.
+			var canvas = document.createElement("canvas");
+			canvas.width = nextHighestPowerOfTwo(img.width);
+			canvas.height = nextHighestPowerOfTwo(img.height);
+			var ctx = canvas.getContext("2d");
+			ctx.drawImage(img, 0, 0, img.width, img.height);
+			
+			img.width = canvas.width;
+			img.height = canvas.height;  
+			img.src = canvas.toDataURL(); 
+		}
+		
+		// Upload texture data
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 
+		// Configure texture
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.generateMipmap(gl.TEXTURE_2D);
+		
 		gl.bindTexture(gl.TEXTURE_2D, null);
 
 		this.lightmapLookup[i] = texture;

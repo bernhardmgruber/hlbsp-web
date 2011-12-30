@@ -25,6 +25,12 @@ function Bsp()
     var models;
     var clipNodes;
 	
+	/** Array of Entity objects */
+	var entities;
+	
+	/** References to the entities that are brush entities */
+	var brushEntityIndexes;
+	
 	//
 	// Calculated
 	//
@@ -32,6 +38,9 @@ function Bsp()
 	/** Array (for each face) of arrays (for each vertex of a face) of JSONs holding s and t coordinate. */
 	var textureCoordinates;
 	var lightmapCoordinates;
+	
+	/** Stores the texture IDs of the textures for each face */
+	var textureLookup;
 	
 	/** Stores the texture IDs of the lightmaps for each face */
 	var lightmapLookup;
@@ -699,9 +708,66 @@ Bsp.prototype.readClipNodes = function(src)
     console.log('Read ' + this.clipNodes.length + ' ClipNodes');
 }
 
+Bsp.prototype.isBrushEntity = function(entity)
+{
+    if (entity.model == undefined)
+        return false;
+
+    /*var className = entity.classname;
+    if (className == "func_door_rotating" ||
+        className == "func_door" ||
+        className == "func_illusionary" ||
+        className == "func_wall" ||
+        className == "func_breakable" ||
+        className == "func_button")
+        return true;
+    else
+        return false;*/
+		
+	return true;
+}
+
 Bsp.prototype.loadEntities = function(src)
 {
+	src.seek(this.header.lumps[LUMP_ENTITIES].offset);
+	
+	var entityData = src.readString(this.header.lumps[LUMP_ENTITIES].length);
+	
+	this.entities = new Array();
+	this.brushEntities = new Array();
+	
+	var end = -1;
+	while(true)
+	{
+		var begin = entityData.indexOf('{', end + 1);
+		if(begin == -1)
+			break;
+		
+		end = entityData.indexOf('}', begin + 1);
+		
+		var entityString = entityData.substring(begin + 1, end);
+		
+		var entity = new Entity(entityString);
+		
+		if(this.isBrushEntity(entity))
+			this.brushEntities.push(entity);
+		
+		this.entities.push(entity);
+	}
+	
+	console.log('Read ' + this.entities.length + ' Entities (' + this.brushEntities.length + ' Brush Entities)');
+}
 
+Bsp.prototype.findEntities = function(name)
+{
+	var matches = new Array();
+	for(var i = 0; i < this.entities.length; i++)
+	{
+		if(this.entities[i].classname == name)
+			matches.push(this.entities[i]);
+	}
+	
+	return matches;
 }
 
 Bsp.prototype.loadVIS = function(src)
@@ -709,10 +775,11 @@ Bsp.prototype.loadVIS = function(src)
 
 }
 
-Bsp.prototype.loadTextures = function()
+Bsp.prototype.loadTextures = function(src)
 {
 	this.textureCoordinates = new Array();
-
+	this.textureLookup = new Array(this.faces.length);
+	
     for (var i = 0; i < this.faces.length; i++)
     {
 		var face = this.faces[i];
@@ -746,6 +813,17 @@ Bsp.prototype.loadTextures = function()
 			};
 			
 			faceCoords.push(coord);
+			
+			// Load internal texture if present
+			if(mipTexture.offsets[0] == 0)
+			{
+				// external texture, leave texture empty, will be loaded later when importing wads
+				this.textureLookup[i] = gl.createTexture();
+				continue; 
+			}
+			
+			var offset = this.header.lump[LUMP_TEXTURES].offset + this.textureHeader.offsets[texInfo.mipTexture];
+			this.textureLookup[i] = Wad.fetchTextureAtOffset(src, offset);
         }
 		
 		this.textureCoordinates.push(faceCoords);
@@ -770,10 +848,8 @@ function createTextureFromImage(image)
 		image.src = canvas.toDataURL(); 
     }
 	
-	//gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-	
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-    //gl.generateMipmap(gl.TEXTURE_2D);
+    gl.generateMipmap(gl.TEXTURE_2D);
 
     return texture;
 }
@@ -792,6 +868,47 @@ function nextHighestPowerOfTwo(x)
     return x + 1;
 }
 
+/**
+ * Converts a raw pixel array into a Image object.
+ *
+ * @param pixelArray An array (or equivalent, must support operator[]) of bytes (e.g. RGBRGBRGB ...)
+ * @param width The with of the image.
+ * @param height The height of the image.
+ * @param channels The number of channels. Must be 3 (RGB) or 4 (RGBA).
+ * @return Returns a new Image object containing the given data.
+ */
+function pixelsToImage(pixelArray, width, height, channels)
+{
+	var canvas = document.createElement("canvas");
+	canvas.width = width;
+	canvas.height = height;
+	var ctx = canvas.getContext("2d");
+	
+
+	// Convert 
+	var imgData = ctx.createImageData(width, height);
+	for (var x = 0; x < width; x++)
+	{
+		for (var y = 0; y < height; y++)
+		{
+			var dataIndex = (x + y * width) * 4;
+			var pixelIndex = (x + y * width) * 3;
+			imgData.data[dataIndex + 0] = pixelArray[pixelIndex + 0];
+			imgData.data[dataIndex + 1] = pixelArray[pixelIndex + 1];
+			imgData.data[dataIndex + 2] = pixelArray[pixelIndex + 2];
+			imgData.data[dataIndex + 3] = 255;
+		}
+	}
+	ctx.putImageData(imgData, 0, 0);
+	
+	var img = new Image(); 
+	img.width = width;
+	img.height = height;  
+	img.src = canvas.toDataURL();
+	
+	return img;
+}
+
 Bsp.prototype.loadLightmaps = function(src)
 {
 	this.lightmapCoordinates = new Array();
@@ -802,9 +919,6 @@ Bsp.prototype.loadLightmaps = function(src)
 
     for (var i = 0; i < this.faces.length; i++)
     {
-		if(i == 35)
-			console.log("LOL");
-	
 		var face = this.faces[i];
 		
 		var faceCoords = new Array();
@@ -896,38 +1010,13 @@ Bsp.prototype.loadLightmaps = function(src)
 
 		/* ********** end http://www.gamedev.net/community/forums/topic.asp?topic_id=538713 ********** */
 
-		var canvas = document.createElement("canvas");
-		canvas.width = width;
-		canvas.height = height;
-		var ctx = canvas.getContext("2d");
-		
 		var pixels = new Uint8Array(src.buffer, this.header.lumps[LUMP_LIGHTING].offset + face.lightmapOffset, width * height * 3)
 		
-		var imgData = ctx.createImageData(width, height);
-		for (var x = 0; x < width; x++)
-		{
-			for (var y = 0; y < height; y++)
-			{
-				var index = (x + y * width) * 4;
-				var lmIndex = (x + y * width) * 3;
-				imgData.data[index + 0] = pixels[lmIndex + 0];
-				imgData.data[index + 1] = pixels[lmIndex + 1];
-				imgData.data[index + 2] = pixels[lmIndex + 2];
-				imgData.data[index + 3] = 255;
-			}
-		}
-		ctx.putImageData(imgData, 0, 0);
-		
-		var img = new Image(); 
-		img.width = width;
-		img.height = height;  
-		img.src = canvas.toDataURL();
+		var img = pixelsToImage(pixels, width, height, 3);
 		
 		//$('body').append('<span>Lightmap ' + i + ' (' + img.width + 'x' + img.height + ')</span>').append(img);
 		
 		var texture = createTextureFromImage(img);
-
-		//gl.bindTexture(gl.TEXTURE_2D, texture);
 
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);

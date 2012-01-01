@@ -39,11 +39,17 @@ function Bsp()
 	var textureCoordinates;
 	var lightmapCoordinates;
 	
-	/** Stores the texture IDs of the textures for each face */
+	/** 
+	 * Stores the texture IDs of the textures for each face.
+	 * Most of them will be dummy textures until they are later loaded from the Wad files.
+	 */
 	var textureLookup;
 	
 	/** Stores the texture IDs of the lightmaps for each face */
 	var lightmapLookup;
+	
+	var missingWads;
+	var missingTextures;
 	
 	//
 	// Buffers
@@ -99,8 +105,6 @@ Bsp.prototype.traverseTree = function(pos, nodeIndex)
  */
 Bsp.prototype.render = function(cameraPos)
 {
-	gl.uniform1i(texUnitsInUseLocation, 2); // use textures here (tex + lightmap)
-	
 	// enable/disable the required attribute arrays
 	gl.enableVertexAttribArray(texCoordLocation);  	
 	gl.enableVertexAttribArray(lightmapCoordLocation);  
@@ -201,8 +205,23 @@ Bsp.prototype.renderFace = function(faceIndex)
 	
 	//console.log("Rendering face " + faceIndex);
 	
-	//gl.activeTexture(gl.TEXTURE1);
-	gl.bindTexture(gl.TEXTURE_2D, this.lightmapLookup[faceIndex]);
+	if(lightmapAvailable)
+	{
+		gl.uniform1i(texUnitsInUseLocation, 2);
+	
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this.textureLookup[texInfo.mipTexture]);
+		
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, this.lightmapLookup[faceIndex]);
+	}
+	else
+	{
+		gl.uniform1i(texUnitsInUseLocation, 1);
+	
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this.textureLookup[texInfo.mipTexture]);
+	}
 
 	gl.drawArrays(polygonMode ? gl.LINE_LOOP : gl.TRIANGLE_FAN, this.faceBufferRegions[faceIndex].start, this.faceBufferRegions[faceIndex].count);
 }
@@ -299,7 +318,7 @@ Bsp.prototype.preRender = function()
  */
 Bsp.prototype.loadBSP = function(arrayBuffer)
 {
-    console.log('Begin loading BSP');
+    console.log('Begin loading bsp');
 	this.loaded = false;
     
     var src = new BinaryFile(arrayBuffer);
@@ -323,7 +342,7 @@ Bsp.prototype.loadBSP = function(arrayBuffer)
     this.readModels(src);
     this.readClipNodes(src);
 	
-	this.loadEntities(src);
+	this.loadEntities(src); // muast be loaded before textures
 	this.loadTextures(src); // plus coordinates
 	this.loadLightmaps(src);  // plus coordinates
 	this.loadVIS(src);
@@ -763,8 +782,10 @@ Bsp.prototype.findEntities = function(name)
 	var matches = new Array();
 	for(var i = 0; i < this.entities.length; i++)
 	{
-		if(this.entities[i].classname == name)
-			matches.push(this.entities[i]);
+		var entity = this.entities[i];
+
+		if(entity.properties.classname == name)
+			matches.push(entity);
 	}
 	
 	return matches;
@@ -775,10 +796,31 @@ Bsp.prototype.loadVIS = function(src)
 
 }
 
+/**
+ * Tries to load the texture identified by name from the loaded wad files.
+ *
+ * @return Returns the texture identifier if the texture has been found, otherwise null.
+ */
+Bsp.prototype.loadTextureFromWad = function(name)
+{
+	var texture = null;
+	for(var k = 0; k < loadedWads.length; k++)
+	{
+		texture = loadedWads[k].loadTexture(name);
+		if(texture != null)
+			break;
+	}
+	
+	return texture;
+}
+
 Bsp.prototype.loadTextures = function(src)
 {
 	this.textureCoordinates = new Array();
-	this.textureLookup = new Array(this.faces.length);
+	
+	//
+	// Texture coordinates
+	//
 	
     for (var i = 0; i < this.faces.length; i++)
     {
@@ -813,21 +855,133 @@ Bsp.prototype.loadTextures = function(src)
 			};
 			
 			faceCoords.push(coord);
-			
-			// Load internal texture if present
-			if(mipTexture.offsets[0] == 0)
-			{
-				// external texture, leave texture empty, will be loaded later when importing wads
-				this.textureLookup[i] = gl.createTexture();
-				continue; 
-			}
-			
-			var offset = this.header.lump[LUMP_TEXTURES].offset + this.textureHeader.offsets[texInfo.mipTexture];
-			this.textureLookup[i] = Wad.fetchTextureAtOffset(src, offset);
         }
 		
 		this.textureCoordinates.push(faceCoords);
     }
+	
+	//
+	// Texture images
+	//
+	
+	this.textureLookup = new Array(this.faces.length);
+	this.missingTextures = new Array();
+	
+	for(var i = 0; i < this.mipTextures; i++)
+	{
+		var mipTex = this.mipTextures[i];
+		
+		if(mipTexture.offsets[0] == 0)
+		{
+			//
+			// External texture
+			//
+		
+			// search texture in loaded wads
+			var texture = this.loadTextureFromWad(mipTexture.name);
+			
+			if(texture != null)
+			{
+				// the texture has been found in a loaded wad
+				this.textureLookup[i] = texture;
+				
+				console.log("Texture " + mipTexture.name + " found");
+			}
+			else
+			{
+				// leave texture empty, will be loaded later when importing wads
+				this.textureLookup[i] = gl.createTexture();
+			
+				// store the name and position of this missing texture,
+				// so that it can later be loaded to the right position by calling loadMissingTextures()
+				this.missingTextures.push({ name: mipTexture.name, index: texInfo.mipTexture });
+			}
+			
+			continue; 
+		}
+		else
+		{
+			//
+			// Load internal texture if present
+			//
+			
+			// Calculate offset of the texture in the bsp file
+			var offset = this.header.lumps[LUMP_TEXTURES].offset + this.textureHeader.offsets[texInfo.mipTexture];
+			
+			// Use the texture loading procedure from the Wad class
+			this.textureLookup[i] = Wad.prototype.fetchTextureAtOffset(src, offset);
+		}
+	}
+	
+	// No that all dummy texture unit IDs have been created, alter the user to select wads for them
+	this.showMissingWads();
+}
+
+/**
+ * Tries to load all missing textures from the currently loaded Wad files.
+ */
+Bsp.prototype.loadMissingTextures = function()
+{
+	for(var i = 0; i < this.missingTextures.length; i++)
+	{
+		var missingTexture = this.missingTextures[i];
+		var texture = this.loadTextureFromWad(missingTexture.name);
+		
+		if(texture != null)
+		{
+			// the texture has finally be found, insert its ID
+			this.textureLookup[missingTexture.index] = texture;
+			
+			console.log("Texture " + mipTexture.name + " found (delayed)");
+			
+			// and remove the entry
+			this.missingTextures.splice(i, 1);
+		}
+	}
+}
+
+Bsp.prototype.showMissingWads = function()
+{
+	this.missingWads = new Array();
+	
+	var worldspawn = this.findEntities('worldspawn')[0];
+	var wadString = worldspawn.properties['wad'];
+	var wads = wadString.split(';');
+	
+	for(var i = 0; i < wads.length; i++)
+	{
+		var wad = wads[i];
+		if(wad == '')
+			continue;
+		
+		// shorten path
+		var pos = wad.lastIndexOf('\\');
+		var file = wad.substring(pos + 1);
+		var dir = wad.substring(wad.lastIndexOf('\\', pos - 1) + 1, pos);
+		
+		// store the missing wad file
+		//this.missingWads.push({ name: file, dir: dir });
+		this.missingWads.push(file);
+	}
+	
+	if(this.missingWads.length == 0)
+		return;
+	
+	$('#wadmissing p:first-child').html('The bsp file references the following missing Wad files:');
+	
+	for(var i = 0; i < this.missingWads.length; i++)
+	{
+		var name = this.missingWads[i];
+		//var dir = this.missingWads[i].dir;
+	
+		//if(dir == 'cstrike' || dir == 'valve')
+		//	caption += ' (' + dir + ')';
+		
+		//$('#wadmissing ul').append('<li><span data-name="' + name + '" data-dir="' + dir + '" class="error">' + caption + '</span></li>');
+		$('#wadmissing ul').append('<li data-name="' + name + '"><span class="error">' + name + '</span></li>');
+	}
+	
+	$('#wadmissing').slideDown(300);
 }
 
 function isPowerOfTwo(x)
@@ -1031,5 +1185,17 @@ Bsp.prototype.loadLightmaps = function(src)
 	
     console.log('Loaded ' + loadedLightmaps + ' lightmaps, lightmapdatadiff: ' + (loadedData - this.header.lumps[LUMP_LIGHTING].length) + ' Bytes ');
 }
+
+Bsp.prototype.unload = function()
+{
+	// Free lightmap lookup
+	for(var i = 0; i < this.lightmapLookup.length; i++)
+		gl.deleteTexture(this.lightmapLookup[i]);
+
+	gl.deleteBuffer(vertexBuffer);
+	gl.deleteBuffer(texCoordBuffer);
+	gl.deleteBuffer(lightmapCoordBuffer);
+	gl.deleteBuffer(normalBuffer);
+};
 
 var bsp = new Bsp();

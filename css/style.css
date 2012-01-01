@@ -54,7 +54,9 @@ h2 {
 }
 
 #info p {
-	display: inline;
+	display: block;
+	float: left;
+    clear: left; 
 }
 
 #info img {
@@ -64,6 +66,14 @@ h2 {
 #log > div {
 	height: 150px;
 	overflow-y: scroll;
+}
+
+#wadmissing > ul, #wads > ul {
+	padding: 10px 20px;
+}
+
+#wadmissing > ul > li > span, #wads > ul > li > span {
+	margin-right: 15px;
 }
 
 p {
@@ -79,20 +89,20 @@ table {
 	border-collapse:collapse;
 }
 
-.normal td {
-	background: lightgrey;
+.normal {
+	background: #eeeeee;
 }
 
-.success td {
-	background: green;
+.success {
+	background: #2E8B57;
 }
 
-.warning td {
-	background: yellow;
+.warning {
+	background: #F0E68C;
 }
 
-.error td {
-	background: red;
+.error {
+	background: #FF4500;
 }
 
 .clear {

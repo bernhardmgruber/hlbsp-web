@@ -44,7 +44,7 @@ function WadDirEntry()
  * Wad class.
  * Represents a wad archiev and offers methods for extracting textures from it.
  */
-function Wad(buffer)
+function Wad()
 {
 	var src;
 	
@@ -53,9 +53,6 @@ function Wad(buffer)
 	
 	/** Array of directory entries */
 	var entries;
-
-
-	return this.open(buffer);
 };
 
 /**
@@ -63,7 +60,9 @@ function Wad(buffer)
  */
 Wad.prototype.open = function(buffer)
 {
-	this.src = new BinFile(buffer);
+	console.log('Begin loading wad');
+
+	this.src = new BinaryFile(buffer);
 
 	var src = this.src;
 	
@@ -72,10 +71,13 @@ Wad.prototype.open = function(buffer)
 	header.dirs = src.readLong();
 	header.dirOffset = src.readLong();
 	
-	if(header.magic != 'WAD2' || header.magic != 'WAD3')
+	console.log('Header: ' + header.magic + ' (' + header.dirs + ' contained objects)');
+	
+	if(header.magic != 'WAD2' && header.magic != 'WAD3')
 		return false;
 	
 	this.header = header;
+	this.entries = new Array();
 	
 	src.seek(header.dirOffset);
 	
@@ -88,10 +90,15 @@ Wad.prototype.open = function(buffer)
 		entry.size = src.readLong();
 		entry.type = src.readByte();
 		entry.compressed = (src.readUByte() ? true : false);
+		src.readUShort();
 		entry.name = src.readString(MAXTEXTURENAME);
+		
+		console.log('Texture #' + i + ' name: ' + entry.name);
 		
 		this.entries.push(entry);
 	}
+	
+	console.log('Finished loading wad');
 	
 	return true;
 }
@@ -100,24 +107,27 @@ Wad.prototype.open = function(buffer)
  * Finds and loads a texture from the wad file.
  *
  * @param texName The name of the texture to find.
- * @return Returns the OpenGL identifier for the loaded textrue obtained by calling gl.createTexture().
+ * @return Returns the OpenGL identifier for the loaded textrue obtained by calling gl.createTexture()
+ *         or null if the texture could not be found.
  */
 Wad.prototype.loadTexture = function(texName)
 {
 	// Find cooresponding directory entry
-	var entry;
-	for(var dirEntry in this.entries)
+	for(var i = 0; i < this.entries.length; i++)
 	{
-		if(dirEntry.name == texName)
-		{
-			entry = dirEntry;
-			break;
-		}
+		var entry = this.entries[i];
+		console.log(texName.length);
+		console.log(entry.name.length);
+		if(entry.name == texName)
+			return this.fetchTextureAtOffset(this.src, entry.offset);
 	}
 	
-	return fetchTextureAtOffset(this.src, entry.offset);
+	return null;
 }
 
+/**
+ * Static method
+ */
 Wad.prototype.fetchTextureAtOffset = function(src, offset)
 {
 	// Seek to the texture beginning
@@ -130,12 +140,12 @@ Wad.prototype.fetchTextureAtOffset = function(src, offset)
 	mipTex.height = src.readULong();
 	mipTex.offsets = new Array();
 	for(var i = 0; i < MIPLEVELS; i++)
-		miptex.offsets.push(src.readULong());
+		mipTex.offsets.push(src.readULong());
 
 	// Fetch color palette
-	var paletteOffset = mipTex.offsets[MIPLEVELS - 1] * ((mipTex.width / 8) * (miptexHeight / 8)) + 2;
+	var paletteOffset = mipTex.offsets[MIPLEVELS - 1] + ((mipTex.width / 8) * (mipTex.height / 8)) + 2;
 	
-	var palette = new Uint8Array(src.buffer, entry.offset + paletteOffset, 256 * 3);
+	var palette = new Uint8Array(src.buffer, offset + paletteOffset, 256 * 3);
 
 	// Generate texture
 	var texture = gl.createTexture();
@@ -148,7 +158,7 @@ Wad.prototype.fetchTextureAtOffset = function(src, offset)
 		var height = mipTex.height >> i;
 		
 		// Fetch the indexed texture
-		var textureIndexes = new Uint8Array(src.buffer, entry.offset + mipTex.offsets[i], width * height);
+		var textureIndexes = new Uint8Array(src.buffer, offset + mipTex.offsets[i], width * height);
 		
 		// Allocate storage for the rgba texture
 		var textureData = new Array(width * height * 4);
@@ -180,3 +190,6 @@ Wad.prototype.fetchTextureAtOffset = function(src, offset)
 	
 	return texture;
 }
+
+/** Stores all loaded wads */
+var loadedWads = new Array();

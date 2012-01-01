@@ -31,13 +31,23 @@
 					<br class="clear">
 				</li>
 				<li id="bspselection">
-					<p>Please select a bsp file:</p>
+					<p>Please select a bsp file (or drop it here):</p>
 					<input type="file" id="bspfile"></input>
 				</li>
 				<li id="bsploading" style="display: none;">
 					<p></p>
 					<progress max="100"></progress>
 					<p></p>
+				</li>
+				<li id="wadmissing" style="display: none;">
+					<p></p>
+					<ul></ul>
+				</li>
+				<li id="wads">
+					<p>Loaded wads:</p>
+					<ul></ul>
+					<hr>
+					<input type="file" id="wadfiles" multiple></input>
 				</li>
 				<li id="log">
 					<h2>Log</h2>
@@ -88,18 +98,24 @@
 			void main(void)
 			{  
 				if(texUnitsInUse == 0)
+				{
 					// Use colors from a color buffer
 					gl_FragColor = varColor;
-				else
+				}
+				else if(texUnitsInUse == 1)
 				{
-					// Use textures to determine fragment color
-					//lowp vec4 texColor = texture2D(uniSamplerTexture, varTexCoord);
-					lowp vec4 texColor = texture2D(uniSamplerTexture, varLightmapCoord);
+					// Use texture only to determine fragment color
+					lowp vec4 texColor = texture2D(uniSamplerTexture, varTexCoord);
+					
+					gl_FragColor = texColor;
+				}
+				else if(texUnitsInUse == 2)
+				{
+					// Use texture and lightmap to determine fragment color
+					lowp vec4 texColor = texture2D(uniSamplerTexture, varTexCoord);
 					lowp vec4 lightmapColor = texture2D(uniSamplerLightmap, varLightmapCoord);
 					
-					//gl_FragColor = lightmapColor;  
-					gl_FragColor = texColor;  
-					gl_FragColor += vec4(0.1, 0.1, 0.1, 1);
+					gl_FragColor = texColor * lightmapColor;  
 				}
 			}  
 		</script>

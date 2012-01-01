@@ -382,7 +382,7 @@ function mainloop()
 		fps = fpsCounter;
 		fpsCounter = 0;
 		lastFpsUpdate = time;
-		$('#info p').text('Rendering at ' + fps + ' FPS');
+		$('#info p:first-child').html('Rendering at <b>' + fps + ' FPS</b>');
 	}
 	
 	lastTime = time;
@@ -402,9 +402,16 @@ function main()
 	startTime = new Date();
 	log('<< STARTUP >>');
 
-	if(!checkRequiredAPI())
-		return;
 	if(!initWebGL())
+		return;
+		
+	// Show WebGL information
+	$('#info img')
+	.after('<p>Vendor: <b>' + gl.getParameter(gl.VENDOR) + '</b></p>')
+	.after('<p>Renderer: <b>' + gl.getParameter(gl.RENDERER) + '</b></p>')
+	.after('<p>Version: <b>' + gl.getParameter(gl.VERSION) + '</b></p>');
+	
+	if(!checkRequiredAPI())
 		return;
 	if(!initShaders())
 		return;

@@ -68,11 +68,20 @@ BinaryFile.prototype.readFloat = function()
 
 BinaryFile.prototype.readString = function(length)
 {
+	var offset = this.offset; // keep an independent copy
 	var str = '';
 	for(var i = 0; i < length; i++)
 	{
-		str += String.fromCharCode(this.view.getUint8(this.offset));
-		this.offset += 1;
+		var ascii = this.view.getUint8(offset);
+		if(ascii == 0)
+			break;
+		str += String.fromCharCode(ascii);
+		offset += 1;
 	}
+	
+	this.offset += length;
+
+	console.log("### READ STRING '" + str + "' length: " + str.length);
+	
 	return str;
 };

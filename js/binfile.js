@@ -81,7 +81,5 @@ BinaryFile.prototype.readString = function(length)
 	
 	this.offset += length;
 
-	console.log("### READ STRING '" + str + "' length: " + str.length);
-	
 	return str;
 };

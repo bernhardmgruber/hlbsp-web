@@ -116,8 +116,6 @@ Wad.prototype.loadTexture = function(texName)
 	for(var i = 0; i < this.entries.length; i++)
 	{
 		var entry = this.entries[i];
-		console.log(texName.length);
-		console.log(entry.name.length);
 		if(entry.name == texName)
 			return this.fetchTextureAtOffset(this.src, entry.offset);
 	}

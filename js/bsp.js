@@ -39,6 +39,11 @@ function Bsp()
 	var textureCoordinates;
 	var lightmapCoordinates;
 	
+	/**
+	 * Contains a plan white 1x1 texture to be used, when a texture could not be loaded yet.
+	 */
+	var whiteTexture;
+	
 	/** 
 	 * Stores the texture IDs of the textures for each face.
 	 * Most of them will be dummy textures until they are later loaded from the Wad files.
@@ -864,12 +869,22 @@ Bsp.prototype.loadTextures = function(src)
 	// Texture images
 	//
 	
+	// Create white texture
+	this.whiteTexture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_2D, this.whiteTexture);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, pixelsToImage(new Array(255, 255, 255), 1, 1, 3));
+	gl.bindTexture(gl.TEXTURE_2D, null);
+	
 	this.textureLookup = new Array(this.faces.length);
 	this.missingTextures = new Array();
 	
-	for(var i = 0; i < this.mipTextures; i++)
+	for(var i = 0; i < this.mipTextures.length; i++)
 	{
-		var mipTex = this.mipTextures[i];
+		var mipTexture = this.mipTextures[i];
 		
 		if(mipTexture.offsets[0] == 0)
 		{
@@ -889,12 +904,14 @@ Bsp.prototype.loadTextures = function(src)
 			}
 			else
 			{
-				// leave texture empty, will be loaded later when importing wads
-				this.textureLookup[i] = gl.createTexture();
+				// bind simple white texture to do not disturb lightmaps
+				this.textureLookup[i] = this.whiteTexture;
 			
 				// store the name and position of this missing texture,
 				// so that it can later be loaded to the right position by calling loadMissingTextures()
-				this.missingTextures.push({ name: mipTexture.name, index: texInfo.mipTexture });
+				this.missingTextures.push({ name: mipTexture.name, index: i });
+				
+				console.log("Texture " + mipTexture.name + " is missing");
 			}
 			
 			continue; 
@@ -932,11 +949,13 @@ Bsp.prototype.loadMissingTextures = function()
 			// the texture has finally be found, insert its ID
 			this.textureLookup[missingTexture.index] = texture;
 			
-			console.log("Texture " + mipTexture.name + " found (delayed)");
+			console.log("Texture " + missingTexture.name + " found (delayed)");
 			
 			// and remove the entry
 			this.missingTextures.splice(i, 1);
 		}
+		else
+			console.log("Texture " + missingTexture.name + " is still missing");
 	}
 }
 
@@ -982,61 +1001,6 @@ Bsp.prototype.showMissingWads = function()
 	}
 	
 	$('#wadmissing').slideDown(300);
-}
-
-function isPowerOfTwo(x)
-{
-    return (x & (x - 1)) == 0;
-}
- 
-function nextHighestPowerOfTwo(x)
-{
-    --x;
-    for (var i = 1; i < 32; i <<= 1) {
-        x = x | x >> i;
-    }
-    return x + 1;
-}
-
-/**
- * Converts a raw pixel array into a Image object.
- *
- * @param pixelArray An array (or equivalent, must support operator[]) of bytes (e.g. RGBRGBRGB ...)
- * @param width The with of the image.
- * @param height The height of the image.
- * @param channels The number of channels. Must be 3 (RGB) or 4 (RGBA).
- * @return Returns a new Image object containing the given data.
- */
-function pixelsToImage(pixelArray, width, height, channels)
-{
-	var canvas = document.createElement("canvas");
-	canvas.width = width;
-	canvas.height = height;
-	var ctx = canvas.getContext("2d");
-	
-
-	// Convert 
-	var imgData = ctx.createImageData(width, height);
-	for (var x = 0; x < width; x++)
-	{
-		for (var y = 0; y < height; y++)
-		{
-			var dataIndex = (x + y * width) * 4;
-			var pixelIndex = (x + y * width) * 3;
-			imgData.data[dataIndex + 0] = pixelArray[pixelIndex + 0];
-			imgData.data[dataIndex + 1] = pixelArray[pixelIndex + 1];
-			imgData.data[dataIndex + 2] = pixelArray[pixelIndex + 2];
-			imgData.data[dataIndex + 3] = 255;
-		}
-	}
-	ctx.putImageData(imgData, 0, 0);
-	
-	var img = new Image(); 
-	img.width = width;
-	img.height = height;  
-	img.src = canvas.toDataURL();
-	
-	return img;
 }
 
 Bsp.prototype.loadLightmaps = function(src)
@@ -1146,24 +1110,9 @@ Bsp.prototype.loadLightmaps = function(src)
 		
 		//$('body').append('<span>Lightmap ' + i + ' (' + img.width + 'x' + img.height + ')</span>').append(img);
 		
-		// Scale image
 		var texture = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, texture);
-		
-		if (!isPowerOfTwo(img.width) || !isPowerOfTwo(img.height))
-		{
-			// Scale up the texture to the next highest power of two dimensions.
-			var canvas = document.createElement("canvas");
-			canvas.width = nextHighestPowerOfTwo(img.width);
-			canvas.height = nextHighestPowerOfTwo(img.height);
-			var ctx = canvas.getContext("2d");
-			ctx.drawImage(img, 0, 0, img.width, img.height);
-			
-			img.width = canvas.width;
-			img.height = canvas.height;  
-			img.src = canvas.toDataURL(); 
-		}
-		
+
 		// Upload texture data
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 

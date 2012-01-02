@@ -29,7 +29,7 @@ function Bsp()
 	var entities;
 	
 	/** References to the entities that are brush entities */
-	var brushEntityIndexes;
+	var brushEntities;
 	
 	//
 	// Calculated
@@ -137,8 +137,85 @@ Bsp.prototype.render = function(cameraPos)
 	var cameraLeaf = this.traverseTree(cameraPos);
 	//console.log("Camera in leaf " + cameraLeaf);
 	
-	// Start the render traversal
+	// Start the render traversal on the static geometry
 	this.renderNode(0, cameraLeaf, cameraPos);
+	
+	// Now render all the entities
+	for (var i = 0; i < this.brushEntities.length; i++)
+        this.renderBrushEntity(this.brushEntities[i], cameraPos);
+}
+
+Bsp.prototype.renderBrushEntity = function(entity, cameraPos)
+{
+    // Model
+    var modelIndex = parseInt(entity.properties["model"].substring(1));
+	var model = this.models[modelIndex];
+
+    // Alpha value
+    var alpha;
+    var renderamt = entity.properties["renderamt"];
+    if(renderamt == undefined)
+        alpha = 255;
+    else
+        alpha = parseInt(renderamt);
+
+    // Rendermode
+    var renderMode;
+	var renderModeString = entity.properties["rendermode"];
+    if(renderModeString == undefined)
+		renderMode = RENDER_MODE_NORMAL;
+    else
+        renderMode = parseInt(renderModeString);
+
+	// push matrix and translate to model origin
+	var oldModelviewMatrix = new J3DIMatrix4(modelviewMatrix);
+	modelviewMatrix.translate(model.origin.x, model.origin.y, model.origin.z);
+	modelviewMatrix.setUniform(gl, modelviewMatrixLocation, false);
+
+    switch (renderMode)
+    {
+		case RENDER_MODE_NORMAL:
+			break;
+		case RENDER_MODE_TEXTURE:
+			gl.uniform1f(alphaLocation, alpha / 255.0);
+			gl.enable(gl.BLEND);
+			gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+			gl.depthMask(false); // make z buffer readonly
+
+			break;
+		case RENDER_MODE_SOLID:
+			gl.uniform1i(alphaTestLocation, 1);
+			break;
+		case RENDER_MODE_ADDITIVE:
+			gl.uniform1f(alphaLocation, alpha / 255.0);
+			gl.enable(gl.BLEND);
+			glBlendFunc(gl.ONE, gl.ONE);
+			gl.depthMask(false); // make z buffer readonly
+
+			break;
+    }
+
+    this.renderNode(model.headNodes[0], -1, cameraPos);
+
+    switch (renderMode)
+    {
+		case RENDER_MODE_NORMAL:
+			break;
+		case RENDER_MODE_TEXTURE:
+		case RENDER_MODE_ADDITIVE:
+			gl.uniform1f(alphaLocation, 1.0);
+			gl.disable(gl.BLEND);
+			gl.depthMask(true);
+
+			break;
+		case RENDER_MODE_SOLID:
+			gl.uniform1i(alphaTestLocation, 0);
+			break;
+    }
+
+    // pop matrix
+	modelviewMatrix = oldModelviewMatrix;
+	modelviewMatrix.setUniform(gl, modelviewMatrixLocation, false);
 }
 
 Bsp.prototype.renderNode = function(nodeIndex, cameraLeaf, cameraPos)
@@ -668,23 +745,23 @@ Bsp.prototype.readModels = function(src)
         var model = new BspModel();
         
 		model.mins = new Array();
-        model.mins.push(src.readShort());
-        model.mins.push(src.readShort());
-        model.mins.push(src.readShort());
+        model.mins.push(src.readFloat());
+        model.mins.push(src.readFloat());
+        model.mins.push(src.readFloat());
         
 		model.maxs = new Array();
-        model.maxs.push(src.readShort());
-        model.maxs.push(src.readShort());
-        model.maxs.push(src.readShort());
+        model.maxs.push(src.readFloat());
+        model.maxs.push(src.readFloat());
+        model.maxs.push(src.readFloat());
         
         model.origin = new Vector3D();
         model.origin.x = src.readFloat();
         model.origin.y = src.readFloat();
         model.origin.z = src.readFloat();
         
-		model.headClipNodes = new Array();
+		model.headNodes = new Array();
         for(var j = 0; j < MAX_MAP_HULLS; j++)
-            model.headClipNodes.push(src.readLong());
+            model.headNodes.push(src.readLong());
             
         model.visLeafs = src.readLong();
         
@@ -722,7 +799,7 @@ Bsp.prototype.readClipNodes = function(src)
 
 Bsp.prototype.isBrushEntity = function(entity)
 {
-    if (entity.model == undefined)
+    if (entity.properties.model == undefined)
         return false;
 
     /*var className = entity.classname;
@@ -846,8 +923,6 @@ Bsp.prototype.loadTextures = function(src)
 				s : (dotProduct(vertex, texInfo.s) + texInfo.sShift) / mipTexture.width,
                 t : (dotProduct(vertex, texInfo.t) + texInfo.tShift) / mipTexture.height
 			};
-			
-			console.log(coord.s + " " + coord.t);
 			
 			faceCoords.push(coord);
         }
@@ -1137,11 +1212,17 @@ Bsp.prototype.unload = function()
 	// Free lightmap lookup
 	for(var i = 0; i < this.lightmapLookup.length; i++)
 		gl.deleteTexture(this.lightmapLookup[i]);
+		
+	// Free texture lookup
+	for(var i = 0; i < this.textureLookup.length; i++)
+		gl.deleteTexture(this.textureLookup[i]);
+		
+	gl.deleteTexture(this.whiteTexture);
 
-	gl.deleteBuffer(vertexBuffer);
-	gl.deleteBuffer(texCoordBuffer);
-	gl.deleteBuffer(lightmapCoordBuffer);
-	gl.deleteBuffer(normalBuffer);
+	gl.deleteBuffer(this.vertexBuffer);
+	gl.deleteBuffer(this.texCoordBuffer);
+	gl.deleteBuffer(this.lightmapCoordBuffer);
+	gl.deleteBuffer(this.normalBuffer);
 };
 
 var bsp = new Bsp();

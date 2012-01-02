@@ -30,7 +30,7 @@ var camera = new function()
 	this.lookSens = 0.25;
 	
 	/** Move sensitivity. Applies to keyboard movement */
-	this.moveSens = 400;
+	this.moveSens = 500;
 	
 	this.lastX;
 	this.lastY;

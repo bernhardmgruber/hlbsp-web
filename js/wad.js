@@ -175,13 +175,18 @@ Wad.prototype.fetchTextureAtOffset = function(src, offset)
                 textureData[j * 4 + 3] = 255; //every pixel is totally opaque
         }
 
+		if(mipTex.name.substring(0, 1) == "{") // this is an alpha texture
+		{
+			console.log(mipTex.name + " is an alpha texture");
+			// Transfere alpha key color to actual alpha values
+			this.applyAlphaSections(textureData, width, height, palette[255 * 3 + 0], palette[255 * 3 + 1], palette[255 * 3 + 2]);
+		}
+		
 		// Upload the data to OpenGL
 		var img = pixelsToImage(textureData, width, height, 4);
 		
 		gl.texImage2D(gl.TEXTURE_2D, 0 /*i*/, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
     }
-	
-	//$('body').append('<span>Texture (' + img.width + 'x' + img.height + ')</span>').append(img);
 	
 	// Configure texture
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -194,6 +199,201 @@ Wad.prototype.fetchTextureAtOffset = function(src, offset)
 	gl.bindTexture(gl.TEXTURE_2D, null);
 	
 	return texture;
+}
+
+Wad.prototype.applyAlphaSections = function(pixels, width, height, keyR, keyG, keyB)
+{
+	// Create an equally sized pixel buffer initialized to the key color 
+	var rgbBuffer = new Array(width * height * 3);
+	
+	for(var y = 0; y < height; y++)
+	{
+		for(var x = 0; x < width; x++)
+		{
+			var bufIndex = (y * width + x) * 3;
+			rgbBuffer[bufIndex + 0] = keyR;
+			rgbBuffer[bufIndex + 1] = keyG;
+			rgbBuffer[bufIndex + 2] = keyB;
+		}
+	}
+
+	// The key color signifies a transparent portion of the texture. Zero alpha for blending and
+	// to get rid of key colored edges choose the average color of the nearest non key pixels.
+	
+	// Interpolate colors for transparent pixels
+	for(var y = 0; y < height; y++)
+	{
+		for(var x = 0; x < width; x++)
+		{
+            var index = (y * width + x) * 4;
+
+            if ((pixels[index + 0] == keyR) &&
+				(pixels[index + 1] == keyG) &&
+				(pixels[index + 2] == keyB))
+            {
+				// This is a pixel which should be transparent
+				
+				pixels[index + 3] = 0;
+
+                var count = 0;
+                var colorSum = new Array(3);
+				colorSum[0] = 0;
+				colorSum[1] = 0;
+				colorSum[2] = 0;
+
+                // left above pixel
+                if((x > 0) && (y > 0))
+                {
+                    var pixelIndex = ((y - 1) * width + (x - 1)) * 4;
+                    if (pixels[pixelIndex + 0] != keyR ||
+						pixels[pixelIndex + 1] != keyG ||
+						pixels[pixelIndex + 2] != keyB)
+                    {
+                        colorSum[0] += pixels[pixelIndex + 0] * Math.SQRT2;
+                        colorSum[1] += pixels[pixelIndex + 1] * Math.SQRT2;
+                        colorSum[2] += pixels[pixelIndex + 2] * Math.SQRT2;
+                        count++;
+                    }
+                }
+
+                // above pixel
+                if((x >= 0) && (y > 0))
+                {
+                    var pixelIndex = ((y - 1) * width + x) * 4;
+                    if (pixels[pixelIndex + 0] != keyR ||
+						pixels[pixelIndex + 1] != keyG ||
+						pixels[pixelIndex + 2] != keyB)
+                    {
+                        colorSum[0] += pixels[pixelIndex + 0];
+                        colorSum[1] += pixels[pixelIndex + 1];
+                        colorSum[2] += pixels[pixelIndex + 2];
+                        count++;
+                    }
+                }
+
+                // right above pixel
+                if((x < width - 1) && (y > 0))
+                {
+                    var pixelIndex = ((y - 1) * width + (x + 1)) * 4;
+                    if (pixels[pixelIndex + 0] != keyR ||
+						pixels[pixelIndex + 1] != keyG ||
+						pixels[pixelIndex + 2] != keyB)
+                    {
+                        colorSum[0] += pixels[pixelIndex + 0] * Math.SQRT2;
+                        colorSum[1] += pixels[pixelIndex + 1] * Math.SQRT2;
+                        colorSum[2] += pixels[pixelIndex + 2] * Math.SQRT2;
+                        count++;
+                    }
+                }
+
+                // left pixel
+                if(x > 0)
+                {
+                    var pixelIndex = (y * width + (x - 1)) * 4;
+                    if (pixels[pixelIndex + 0] != keyR ||
+						pixels[pixelIndex + 1] != keyG ||
+						pixels[pixelIndex + 2] != keyB)
+                    {
+                        colorSum[0] += pixels[pixelIndex + 0];
+                        colorSum[1] += pixels[pixelIndex + 1];
+                        colorSum[2] += pixels[pixelIndex + 2];
+                        count++;
+                    }
+                }
+
+                // right pixel
+                if(x < width - 1)
+                {
+                    var pixelIndex = (y * width + (x + 1)) * 4;
+                    if (pixels[pixelIndex + 0] != keyR ||
+						pixels[pixelIndex + 1] != keyG ||
+						pixels[pixelIndex + 2] != keyB)
+                    {
+                        colorSum[0] += pixels[pixelIndex + 0];
+                        colorSum[1] += pixels[pixelIndex + 1];
+                        colorSum[2] += pixels[pixelIndex + 2];
+                        count++;
+                    }
+                }
+
+                // left underneath pixel
+                if((x > 0) && (y < height - 1))
+                {
+                    var pixelIndex = ((y + 1) * width + (x - 1)) * 4;
+                    if (pixels[pixelIndex + 0] != keyR ||
+						pixels[pixelIndex + 1] != keyG ||
+						pixels[pixelIndex + 2] != keyB)
+                    {
+                        colorSum[0] += pixels[pixelIndex + 0] * Math.SQRT2;
+                        colorSum[1] += pixels[pixelIndex + 1] * Math.SQRT2;
+                        colorSum[2] += pixels[pixelIndex + 2] * Math.SQRT2;
+                        count++;
+                    }
+                }
+
+                // underneath pixel
+                if((x >= 0) && (y < height - 1))
+                {
+                    var pixelIndex = ((y + 1) * width + x) * 4;
+                    if (pixels[pixelIndex + 0] != keyR ||
+						pixels[pixelIndex + 1] != keyG ||
+						pixels[pixelIndex + 2] != keyB)
+                    {
+                        colorSum[0] += pixels[pixelIndex + 0];
+                        colorSum[1] += pixels[pixelIndex + 1];
+                        colorSum[2] += pixels[pixelIndex + 2];
+                        count++;
+                    }
+                }
+
+                // right underneath pixel
+                if((x < width - 1) && (y < height - 1))
+                {
+                    var pixelIndex = ((y + 1) * width + (x + 1)) * 4;
+                    if (pixels[pixelIndex + 0] != keyR ||
+						pixels[pixelIndex + 1] != keyG ||
+						pixels[pixelIndex + 2] != keyB)
+                    {
+                        colorSum[0] += pixels[pixelIndex + 0] * Math.SQRT2;
+                        colorSum[1] += pixels[pixelIndex + 1] * Math.SQRT2;
+                        colorSum[2] += pixels[pixelIndex + 2] * Math.SQRT2;
+                        count++;
+                    }
+                }
+
+                if (count > 0)
+                {
+                    colorSum[0] /= count;
+                    colorSum[1] /= count;
+                    colorSum[2] /= count;
+
+					var bufIndex = (y * width + x) * 3;
+                    rgbBuffer[bufIndex + 0] = Math.round(colorSum[0]);
+                    rgbBuffer[bufIndex + 1] = Math.round(colorSum[1]);
+                    rgbBuffer[bufIndex + 2] = Math.round(colorSum[2]);
+                }
+            }
+        }
+    }
+
+    // Transfer interpolated colors to the texture
+	for(var y = 0; y < height; y++)
+	{
+		for(var x = 0; x < width; x++)
+		{
+            var index = (y * width + x) * 4;
+			var bufindex = (y * width + x) * 3;
+
+            if ((rgbBuffer[bufindex + 0] != keyR) ||
+				(rgbBuffer[bufindex + 1] != keyG) ||
+				(rgbBuffer[bufindex + 2] != keyB))
+            {
+				pixels[index + 0] = rgbBuffer[bufindex + 0];
+				pixels[index + 1] = rgbBuffer[bufindex + 1];
+				pixels[index + 2] = rgbBuffer[bufindex + 2];
+            }
+        }
+    }
 }
 
 /** Stores all loaded wads */

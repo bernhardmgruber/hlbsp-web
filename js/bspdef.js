@@ -319,12 +319,12 @@ typedef struct _BSPMODEL
 */
 function BspModel()
 {
-	var mins;          // Defines bounding box
+	var mins;      // Defines bounding box
 	var maxs; 
-	var origin;        // Coordinates to move the coordinate system before drawing the model
-	var headClipNodes; // Index into clipnodes
-	var visLeafs;      // No idea
-	var firstFace;     // Index and count into face array
+	var origin;    // Coordinates to move the coordinate system before drawing the model
+	var headNodes; // Indexes into nodes (first into world nodes, remaining into clip nodes)
+	var visLeafs;  // No idea
+	var firstFace; // Index and count into face array
 	var faces;
 }
 var SIZE_OF_BSPMODEL = 64;

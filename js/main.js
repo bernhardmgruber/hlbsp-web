@@ -202,6 +202,10 @@ var lightmapsEnabledLocation;
 
 var useColorLocation;
 
+var alphaTestLocation;
+
+var alphaLocation;
+
 function initShaders()
 {  
 	var vertexShader = getShader(gl, "shader-vs");  
@@ -236,19 +240,29 @@ function initShaders()
 	normalLocation = gl.getAttribLocation(shaderProgram, "attribNormal");  
 	colorLocation = gl.getAttribLocation(shaderProgram, "attribColor");  
 
-	samplerTextureLocation  = gl.getUniformLocation(shaderProgram, "uniSamplerTexture");
+	samplerTextureLocation = gl.getUniformLocation(shaderProgram, "uniSamplerTexture");
 	gl.uniform1i(samplerTextureLocation, 0);
-	samplerLightmapLocation  = gl.getUniformLocation(shaderProgram, "uniSamplerLightmap");
+	samplerLightmapLocation = gl.getUniformLocation(shaderProgram, "uniSamplerLightmap");
 	gl.uniform1i(samplerLightmapLocation, 1);
 	
-	texturesEnabledLocation  = gl.getUniformLocation(shaderProgram, "texturesEnabled");
+	texturesEnabledLocation = gl.getUniformLocation(shaderProgram, "texturesEnabled");
 	gl.uniform1i(texturesEnabledLocation, 1);
-	lightmapsEnabledLocation  = gl.getUniformLocation(shaderProgram, "lightmapsEnabled");
+	lightmapsEnabledLocation = gl.getUniformLocation(shaderProgram, "lightmapsEnabled");
 	gl.uniform1i(lightmapsEnabledLocation, 1);
 	
-	useColorLocation  = gl.getUniformLocation(shaderProgram, "useColor");
+	useColorLocation = gl.getUniformLocation(shaderProgram, "useColor");
+	
+	alphaTestLocation = gl.getUniformLocation(shaderProgram, "alphaTest");
+	
+	alphaLocation = gl.getUniformLocation(shaderProgram, "alpha");
+	
+	//
+	// Init some of them
+	//
 	
 	gl.enableVertexAttribArray(positionLocation); // We will always need vertices
+	
+	gl.uniform1f(alphaLocation, 1.0);
 	
 	return true;
 }  

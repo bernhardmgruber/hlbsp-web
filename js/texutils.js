@@ -58,6 +58,7 @@ function pixelsToImage(pixelArray, width, height, channels)
 	img.width = width;
 	img.height = height;  
 	img.src = conversionCanvas.toDataURL();
+	//$('body').append('<span>Texture (' + img.width + 'x' + img.height + ')</span>').append(img);
 	
 	//
 	// Scale
@@ -75,6 +76,7 @@ function pixelsToImage(pixelArray, width, height, channels)
 		img.height = conversionCanvas.height;  
 		img.src = conversionCanvas.toDataURL(); 
 	}
+	//$('body').append('<span>Texture (' + img.width + 'x' + img.height + ')</span>').append(img);
 	
 	return img;
 }

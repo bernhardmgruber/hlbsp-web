@@ -47,7 +47,7 @@
 					<ul></ul>
 				</li>
 				<li id="wads">
-					<p>Loaded wads:</p>
+					<p>Loaded wads (select or drop here):</p>
 					<ul></ul>
 					<hr>
 					<input type="file" id="wadfiles" multiple></input>
@@ -96,7 +96,13 @@
 			uniform bool lightmapsEnabled;
 			
 			uniform bool useColor;
-		
+			
+			/** If set to true, the fragment shader performs an alpha test using GL_GREATER alpha func */
+			uniform bool alphaTest;
+			
+			/** For setting the final alpha value manually (by multiplication) */
+			uniform lowp float alpha;
+
 			varying highp vec2 varTexCoord;
 			varying highp vec2 varLightmapCoord;
 			varying lowp vec4 varColor;
@@ -131,6 +137,12 @@
 						gl_FragColor = lightColor;
 					}
 				}
+				
+				gl_FragColor.a *= alpha;
+				
+				// Alpha test
+				if(alphaTest && gl_FragColor.a <= 0.25)
+					discard;
 			}  
 		</script>
 	</body>

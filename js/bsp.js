@@ -55,7 +55,11 @@ function Bsp()
 	/** Stores the texture IDs of the lightmaps for each face */
 	var lightmapLookup;
 	
+	/** Stores a list of missing textures */
 	var missingTextures;
+	
+	/** An array (for each leaf) of arrays (for each leaf) of booleans. */
+	var visLists;
 	
 	//
 	// Buffers
@@ -225,9 +229,12 @@ Bsp.prototype.renderNode = function(nodeIndex, cameraLeaf, cameraPos)
         if (nodeIndex == -1) // Solid leaf 0
             return;
 
-        //if (cameraLeaf > 0)
-        //    if (header.lump[LUMP_VISIBILITY].nLength != 0 && ppbVisLists != NULL && ppbVisLists[cameraLeaf - 1] != NULL && !ppbVisLists[cameraLeaf - 1][~nodeIndex - 1])
-        //        return;
+		// perform vis check
+        if (cameraLeaf > 0)
+            if (this.header.lumps[LUMP_VISIBILITY].length != 0 &&
+				this.visLists[cameraLeaf - 1] != null &&
+				!this.visLists[cameraLeaf - 1][~nodeIndex - 1])
+                return;
 
         this.renderLeaf(~nodeIndex);
 
@@ -863,7 +870,79 @@ Bsp.prototype.findEntities = function(name)
 
 Bsp.prototype.loadVIS = function(src)
 {
+    if(this.header.lumps[LUMP_VISIBILITY].length > 0)
+    {
+		var visLeaves = this.countVisLeaves(0);
+		
+		this.visLists = new Array(visLeaves);
+		
+		for (var i = 0; i < visLeaves; i++)
+        {
+            if (this.leaves[i + 1].visOffset >= 0)
+                this.visLists[i] = this.getPVS(src, i + 1, visLeaves);
+            else
+                this.visLists[i] = null;
+        }
+    }
+    else
+        console.log("No VIS found\n");
+}
 
+Bsp.prototype.countVisLeaves = function(nodeIndex)
+{
+    if (nodeIndex < 0)
+    {
+        // leaf 0
+        if(nodeIndex == -1)
+            return 0;
+
+        if(this.leaves[~nodeIndex].contents == CONTENTS_SOLID)
+            return 0;
+
+		return 1;
+    }
+	
+	var node = this.nodes[nodeIndex];
+
+    return this.countVisLeaves(node.children[0]) + this.countVisLeaves(node.children[1]);
+}
+
+Bsp.prototype.getPVS = function(src, leafIndex, visLeaves)
+{
+	var list = new Array(this.leaves.length - 1);
+	
+	for(var i = 0; i < list.length; i++)
+		list[i] = false;
+
+	var compressed = new Uint8Array(src.buffer, this.header.lumps[LUMP_VISIBILITY].offset + this.leaves[leafIndex].visOffset);
+
+    var writeIndex = 0; // Index that moves through the destination bool array (list)
+
+    for (var curByte = 0; writeIndex < visLeaves; curByte++)
+    {
+        // Check for a run of 0s
+        if (compressed[curByte] == 0)
+        {
+            // Advance past this run of 0s
+            curByte++;
+            // Move the write pointer the number of compressed 0s
+            writeIndex += 8 * compressed[curByte];
+        }
+        else
+        {
+            // Iterate through this byte with bit shifting till the bit has moved beyond the 8th digit
+            for (var mask = 0x01; mask != 0x0100; writeIndex++, mask <<= 1)
+            {
+                // Test a bit of the compressed PVS with the bit mask
+                if ((compressed[curByte] & mask) && (writeIndex  < visLeaves))
+                    list[writeIndex] = true;
+            }
+        }
+    }
+
+	console.log("List for leaf " + leafIndex + ": " + list);
+	
+    return list;
 }
 
 /**

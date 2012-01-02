@@ -89,10 +89,13 @@
 			}  
 		</script>  
 		<script id="shader-fs" type="x-shader/x-fragment">
-			uniform int texUnitsInUse; // The number of texture units in use
-		
 			uniform sampler2D uniSamplerTexture; 
 			uniform sampler2D uniSamplerLightmap; 
+			
+			uniform bool texturesEnabled;
+			uniform bool lightmapsEnabled;
+			
+			uniform bool useColor;
 		
 			varying highp vec2 varTexCoord;
 			varying highp vec2 varLightmapCoord;
@@ -100,25 +103,33 @@
 		
 			void main(void)
 			{  
-				if(texUnitsInUse == 0)
-				{
+				if(useColor)
 					// Use colors from a color buffer
 					gl_FragColor = varColor;
-				}
-				else if(texUnitsInUse == 1)
+				else
 				{
-					// Use texture only to determine fragment color
-					lowp vec4 texColor = texture2D(uniSamplerTexture, varTexCoord);
-					
-					gl_FragColor = texColor;
-				}
-				else if(texUnitsInUse == 2)
-				{
-					// Use texture and lightmap to determine fragment color
-					lowp vec4 texColor = texture2D(uniSamplerTexture, varTexCoord);
-					lowp vec4 lightmapColor = texture2D(uniSamplerLightmap, varLightmapCoord);
-					
-					gl_FragColor = texColor * lightmapColor;  
+					if(texturesEnabled && lightmapsEnabled)
+					{
+						// Use texture and lightmap to determine fragment color
+						lowp vec4 texColor = texture2D(uniSamplerTexture, varTexCoord);
+						lowp vec4 lightmapColor = texture2D(uniSamplerLightmap, varLightmapCoord);
+						
+						gl_FragColor = texColor * lightmapColor;  
+					}
+					else if(texturesEnabled)
+					{
+						// Use texture only to determine fragment color
+						lowp vec4 texColor = texture2D(uniSamplerTexture, varTexCoord);
+						
+						gl_FragColor = texColor;
+					}
+					else if(lightmapsEnabled)
+					{
+						// Use lightmap only to determine fragment color
+						lowp vec4 lightColor = texture2D(uniSamplerLightmap, varLightmapCoord);
+						
+						gl_FragColor = lightColor;
+					}
 				}
 			}  
 		</script>

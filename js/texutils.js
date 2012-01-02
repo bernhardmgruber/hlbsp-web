@@ -42,11 +42,14 @@ function pixelsToImage(pixelArray, width, height, channels)
 		for (var y = 0; y < height; y++)
 		{
 			var dataIndex = (x + y * width) * 4;
-			var pixelIndex = (x + y * width) * 3;
+			var pixelIndex = (x + y * width) * channels;
 			imgData.data[dataIndex + 0] = pixelArray[pixelIndex + 0];
 			imgData.data[dataIndex + 1] = pixelArray[pixelIndex + 1];
 			imgData.data[dataIndex + 2] = pixelArray[pixelIndex + 2];
-			imgData.data[dataIndex + 3] = 255;
+			if(channels == 4)
+				imgData.data[dataIndex + 3] = pixelArray[pixelIndex + 3];
+			else
+				imgData.data[dataIndex + 3] = 255;
 		}
 	}
 	conversionCtx.putImageData(imgData, 0, 0);
@@ -72,8 +75,6 @@ function pixelsToImage(pixelArray, width, height, channels)
 		img.height = conversionCanvas.height;  
 		img.src = conversionCanvas.toDataURL(); 
 	}
-	
-	$('body').append('<span>Texture (' + img.width + 'x' + img.height + ')</span>').append(img);
 	
 	return img;
 }

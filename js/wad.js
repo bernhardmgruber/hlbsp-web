@@ -46,6 +46,9 @@ function WadDirEntry()
  */
 function Wad()
 {
+	/** Identifies the wad */
+	var name;
+
 	var src;
 	
 	/** Wad file header */
@@ -149,14 +152,14 @@ Wad.prototype.fetchTextureAtOffset = function(src, offset)
 	var texture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    for (var i = 0; i < MIPLEVELS; i++)
+    //for (var i = 0; i < MIPLEVELS; i++) // ONLY LOAD FIRST MIPLEVEL !!!
     {   
 		// Width and height shrink to half for every level
-		var width = mipTex.width >> i;
-		var height = mipTex.height >> i;
+		var width = mipTex.width; //>> i;
+		var height = mipTex.height; // >> i;
 		
 		// Fetch the indexed texture
-		var textureIndexes = new Uint8Array(src.buffer, offset + mipTex.offsets[i], width * height);
+		var textureIndexes = new Uint8Array(src.buffer, offset + mipTex.offsets[0 /*i*/], width * height);
 		
 		// Allocate storage for the rgba texture
 		var textureData = new Array(width * height * 4);
@@ -175,14 +178,18 @@ Wad.prototype.fetchTextureAtOffset = function(src, offset)
 		// Upload the data to OpenGL
 		var img = pixelsToImage(textureData, width, height, 4);
 		
-		gl.texImage2D(gl.TEXTURE_2D, i, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+		gl.texImage2D(gl.TEXTURE_2D, 0 /*i*/, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
     }
 	
+	//$('body').append('<span>Texture (' + img.width + 'x' + img.height + ')</span>').append(img);
+	
 	// Configure texture
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); // LINEAR_MIPMAP_LINEAR
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); // LINEAR_MIPMAP_LINEAR
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+	//gl.generateMipmap(gl.TEXTURE_2D);
+	//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, MIPLEVELS - 1);
 	
 	gl.bindTexture(gl.TEXTURE_2D, null);
 	

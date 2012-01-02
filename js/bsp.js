@@ -34,6 +34,8 @@ function Bsp()
 	//
 	// Calculated
 	//
+	
+	var missingWads;
 
 	/** Array (for each face) of arrays (for each vertex of a face) of JSONs holding s and t coordinate. */
 	var textureCoordinates;
@@ -53,7 +55,6 @@ function Bsp()
 	/** Stores the texture IDs of the lightmaps for each face */
 	var lightmapLookup;
 	
-	var missingWads;
 	var missingTextures;
 	
 	//
@@ -208,25 +209,12 @@ Bsp.prototype.renderFace = function(faceIndex)
 	// if the light map offset is not -1 and the lightmap lump is not empty, there are lightmaps
     var lightmapAvailable = face.lightmapOffset != -1 && this.header.lumps[LUMP_LIGHTING].length > 0;
 	
-	//console.log("Rendering face " + faceIndex);
+	gl.activeTexture(gl.TEXTURE0);
+	gl.bindTexture(gl.TEXTURE_2D, this.textureLookup[texInfo.mipTexture]);
 	
-	if(lightmapAvailable)
-	{
-		gl.uniform1i(texUnitsInUseLocation, 2);
-	
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.textureLookup[texInfo.mipTexture]);
-		
-		gl.activeTexture(gl.TEXTURE1);
-		gl.bindTexture(gl.TEXTURE_2D, this.lightmapLookup[faceIndex]);
-	}
-	else
-	{
-		gl.uniform1i(texUnitsInUseLocation, 1);
-	
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.textureLookup[texInfo.mipTexture]);
-	}
+	gl.activeTexture(gl.TEXTURE1);
+	gl.bindTexture(gl.TEXTURE_2D, this.lightmapLookup[faceIndex]);
+
 
 	gl.drawArrays(polygonMode ? gl.LINE_LOOP : gl.TRIANGLE_FAN, this.faceBufferRegions[faceIndex].start, this.faceBufferRegions[faceIndex].count);
 }
@@ -623,7 +611,7 @@ Bsp.prototype.readMipTextures = function(src)
         
         miptex.name = src.readString(MAXTEXTURENAME);
         
-        miptex.widht = src.readULong();
+        miptex.width = src.readULong();
         
         miptex.height = src.readULong();
         
@@ -859,6 +847,8 @@ Bsp.prototype.loadTextures = function(src)
                 t : (dotProduct(vertex, texInfo.t) + texInfo.tShift) / mipTexture.height
 			};
 			
+			console.log(coord.s + " " + coord.t);
+			
 			faceCoords.push(coord);
         }
 		
@@ -953,6 +943,7 @@ Bsp.prototype.loadMissingTextures = function()
 			
 			// and remove the entry
 			this.missingTextures.splice(i, 1);
+			i--;
 		}
 		else
 			console.log("Texture " + missingTexture.name + " is still missing");
@@ -976,11 +967,17 @@ Bsp.prototype.showMissingWads = function()
 		// shorten path
 		var pos = wad.lastIndexOf('\\');
 		var file = wad.substring(pos + 1);
-		var dir = wad.substring(wad.lastIndexOf('\\', pos - 1) + 1, pos);
+		//var dir = wad.substring(wad.lastIndexOf('\\', pos - 1) + 1, pos);
 		
 		// store the missing wad file
 		//this.missingWads.push({ name: file, dir: dir });
-		this.missingWads.push(file);
+		var found = false;
+		for(var j = 0; j < loadedWads.length; j++)
+			if(loadedWads[j].name == file)
+				found = true;
+		
+		if(!found) // the wad file hasn't already been added loaded
+			this.missingWads.push(file);
 	}
 	
 	if(this.missingWads.length == 0)

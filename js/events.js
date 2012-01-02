@@ -120,6 +120,7 @@ function handleWadFileLoading(files)
 			
 			log('Loading wad file ' + name);
 			var wad = new Wad();
+			wad.name = name;
 			if(wad.open(event.target.result))
 			{
 				loadedWads.push(wad);
@@ -133,14 +134,17 @@ function handleWadFileLoading(files)
 				{
 					for(var j = 0; j < bsp.missingWads.length; j++)
 					{
-						if(bsp.missingWads[i] == name)
+						if(bsp.missingWads[j] == name)
 						{
 							bsp.missingWads.splice(j, 1);
 							break;
 						}
 					}
 					
-					$('#wadmissing ul li[name="' + name + '"]').remove();
+					$('#wadmissing > ul > li').filter(function() { if($(this).attr('data-name') == name) return true; else return false; }).remove();
+				
+					if($('#wadmissing > ul > li').size() == 0)
+						setTimeout("$('#wadmissing').slideUp(300);", 2000);
 				}
 				
 				// add this wad to the loaded ones in the control panel
@@ -184,6 +188,8 @@ function handleWadDragOver(event)
 // SOME GLOBAL EVENT VARS
 var polygonMode = false;
 var showCoordSystem = false;
+var renderTextures = true;
+var renderLightmaps = true;
 
 /**
  * This function is called when the document has finished loading and binds all event handlers to their corresponding objects.
@@ -197,13 +203,23 @@ function setEventHandlers()
 		
 		switch(event.keyCode)
 		{
+			case 67: // C
+				showCoordSystem = !showCoordSystem;
+				console.log('Coordsystem ' + (showCoordSystem ? 'enabled' : 'disabled'));
+				break;
+			case 76: // L
+				renderLightmaps = !renderLightmaps;
+				gl.uniform1i(lightmapsEnabledLocation, renderLightmaps ? 1 : 0);
+				console.log((renderLightmaps ? 'Enabled' : 'Disabled') + ' rendering lightmaps');
+				break;
 			case 80: // P
 				polygonMode = !polygonMode;
 				console.log('Polygonmode: ' + (polygonMode ? 'Wireframe' : 'Fill'));
 				break;
-			case 67: // C
-				showCoordSystem = !showCoordSystem;
-				console.log('Coordsystem ' + (showCoordSystem ? 'enabled' : 'disabled'));
+			case 84: // T
+				renderTextures = !renderTextures;
+				gl.uniform1i(texturesEnabledLocation, renderTextures ? 1 : 0);
+				console.log((renderTextures ? 'Enabled' : 'Disabled') + ' rendering textures');
 				break;
 		}
 	};

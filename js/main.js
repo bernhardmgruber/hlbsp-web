@@ -187,7 +187,6 @@ function getShader(gl, id)
 
 var projectionMatrixLocation;
 var modelviewMatrixLocation;
-var texUnitsInUseLocation;
 
 var positionLocation;
 var texCoordLocation;
@@ -197,6 +196,11 @@ var colorLocation;
 
 var samplerTextureLocation;
 var samplerLightmapLocation;
+
+var texturesEnabledLocation;
+var lightmapsEnabledLocation;
+
+var useColorLocation;
 
 function initShaders()
 {  
@@ -224,7 +228,7 @@ function initShaders()
 	// Get variable locations
 	projectionMatrixLocation = gl.getUniformLocation(shaderProgram, 'pMatrix');
 	modelviewMatrixLocation = gl.getUniformLocation(shaderProgram, 'mvMatrix');
-	texUnitsInUseLocation = gl.getUniformLocation(shaderProgram, 'texUnitsInUse');
+
 	
 	positionLocation = gl.getAttribLocation(shaderProgram, "attribPosition"); 
 	texCoordLocation = gl.getAttribLocation(shaderProgram, "attribTexCoord");  
@@ -234,9 +238,15 @@ function initShaders()
 
 	samplerTextureLocation  = gl.getUniformLocation(shaderProgram, "uniSamplerTexture");
 	gl.uniform1i(samplerTextureLocation, 0);
-	
 	samplerLightmapLocation  = gl.getUniformLocation(shaderProgram, "uniSamplerLightmap");
 	gl.uniform1i(samplerLightmapLocation, 1);
+	
+	texturesEnabledLocation  = gl.getUniformLocation(shaderProgram, "texturesEnabled");
+	gl.uniform1i(texturesEnabledLocation, 1);
+	lightmapsEnabledLocation  = gl.getUniformLocation(shaderProgram, "lightmapsEnabled");
+	gl.uniform1i(lightmapsEnabledLocation, 1);
+	
+	useColorLocation  = gl.getUniformLocation(shaderProgram, "useColor");
 	
 	gl.enableVertexAttribArray(positionLocation); // We will always need vertices
 	
@@ -307,6 +317,9 @@ function setStates()
 	
 	gl.clearColor(0, 0, 0, 1);
 	gl.enable(gl.DEPTH_TEST);
+	
+	gl.cullFace(gl.FRONT);
+	gl.enable(gl.CULL_FACE);
 }
 
 function resize()
@@ -344,7 +357,7 @@ function render()
 	if(bsp.loaded)
 		bsp.render(camera.pos);
 		
-	gl.uniform1i(texUnitsInUseLocation, 0); // use colors for rendering
+	gl.uniform1i(useColorLocation, 1); // use colors for rendering
 	
 	// enable/disable the required attribute arrays
 	gl.disableVertexAttribArray(texCoordLocation);  	
@@ -361,6 +374,8 @@ function render()
 		
 		gl.drawArrays(gl.LINES, 0, 12);
 	}
+	
+	gl.uniform1i(useColorLocation, 0);
 }
 
 var lastTime = new Date().getTime();

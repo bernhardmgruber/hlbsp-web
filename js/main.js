@@ -343,7 +343,7 @@ function resize()
 	
 	log('Resizing to ' + width + ' x ' + height);
 
-	projectionMatrix.perspective(60.0, width / height, 8.0, 4000.0);
+	projectionMatrix.perspective(60.0, width / height, 8.0, 6000.0);
 	gl.viewport(0, 0, width, height);
 	
 	projectionMatrix.setUniform(gl, projectionMatrixLocation, false);

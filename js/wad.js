@@ -119,7 +119,7 @@ Wad.prototype.loadTexture = function(texName)
 	for(var i = 0; i < this.entries.length; i++)
 	{
 		var entry = this.entries[i];
-		if(entry.name == texName)
+		if(entry.name.toLowerCase() == texName.toLowerCase())
 			return this.fetchTextureAtOffset(this.src, entry.offset);
 	}
 	
@@ -184,6 +184,8 @@ Wad.prototype.fetchTextureAtOffset = function(src, offset)
 		
 		// Upload the data to OpenGL
 		var img = pixelsToImage(textureData, width, height, 4);
+		
+		//$('body').append('<span>Texture (' + img.width + 'x' + img.height + ')</span>').append(img);
 		
 		gl.texImage2D(gl.TEXTURE_2D, 0 /*i*/, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
     }

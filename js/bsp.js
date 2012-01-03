@@ -808,6 +808,9 @@ Bsp.prototype.isBrushEntity = function(entity)
 {
     if (entity.properties.model == undefined)
         return false;
+		
+	if(entity.properties.model.substring(0, 1) != '*')
+		return false; // external model
 
     /*var className = entity.classname;
     if (className == "func_door_rotating" ||
@@ -940,7 +943,7 @@ Bsp.prototype.getPVS = function(src, leafIndex, visLeaves)
         }
     }
 
-	console.log("List for leaf " + leafIndex + ": " + list);
+	//console.log("List for leaf " + leafIndex + ": " + list);
 	
     return list;
 }
@@ -1067,14 +1070,16 @@ Bsp.prototype.loadTextures = function(src)
 			//
 			
 			// Calculate offset of the texture in the bsp file
-			var offset = this.header.lumps[LUMP_TEXTURES].offset + this.textureHeader.offsets[texInfo.mipTexture];
+			var offset = this.header.lumps[LUMP_TEXTURES].offset + this.textureHeader.offsets[i];
 			
 			// Use the texture loading procedure from the Wad class
 			this.textureLookup[i] = Wad.prototype.fetchTextureAtOffset(src, offset);
+			
+			console.log("Fetched interal texture " + mipTexture.name);
 		}
 	}
 	
-	// No that all dummy texture unit IDs have been created, alter the user to select wads for them
+	// Now that all dummy texture unit IDs have been created, alert the user to select wads for them
 	this.showMissingWads();
 }
 
@@ -1151,7 +1156,7 @@ Bsp.prototype.showMissingWads = function()
 		$('#wadmissing ul').append('<li data-name="' + name + '"><span class="error">' + name + '</span></li>');
 	}
 	
-	$('#wadmissing').slideDown(300);
+	setTimeout($('#wadmissing').slideDown(300), 0);
 }
 
 Bsp.prototype.loadLightmaps = function(src)

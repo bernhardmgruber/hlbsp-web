@@ -70,8 +70,9 @@ function pixelsToImage(pixelArray, width, height, channels)
 		conversionCanvas.width = nextHighestPowerOfTwo(img.width);
 		conversionCanvas.height = nextHighestPowerOfTwo(img.height);
 		//var ctx = conversionCanvas.getContext("2d");
-		conversionCtx.drawImage(img, 0, 0, img.width, img.height);
+		conversionCtx.drawImage(img, 0, 0, conversionCanvas.width, conversionCanvas.height);
 		
+		img = new Image();
 		img.width = conversionCanvas.width;
 		img.height = conversionCanvas.height;  
 		img.src = conversionCanvas.toDataURL(); 

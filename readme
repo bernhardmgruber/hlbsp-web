@@ -1,0 +1,93 @@
+=== hlbsp viewer ===
+
+Last edited: January 5th 2010
+
+
+= Author =
+The author of this project is Bernhard Manfred Gruber,
+a 20 year old student at the
+Upper Austrian University of Applied Science in Hagenberg (Austria).
+
+
+= About =
+The hlbsp viewer is a client side html 5 application using JavaScript and
+WebGL to render bsp files.
+
+
+= Reasons =
+This project mainly targets the need of a free implementation of the .bsp
+(short for binary space partitioning) file format version 30 (used by the
+well-known HalfLife/GoldSrc engine), which has already been done by my old
+hlbsp project written in C/C++.
+You can find it here: http://sourceforge.net/projects/hlbsp/
+During the work on this "reimplementation" I could refactor and improve some
+parts of the code as well as port the existing OpenGL implementation using
+mostly OpenGL 1.1 features (glBegin etc.) to meet the WebGL standard (which
+is basically OpenGL ES 2.0) by using advanced features like Buffer Objects.
+
+The second aspect of this code is to show an examplary WebGL implementation
+rendering something "more advanced" than cubes (as mostly used in WebGL
+tutorials) or anything similar. Additionally, it shows how to deal with binary
+data. Currently only in a very bleeding edge way (the working draft from
+Khronos specifying the DataView class has been released some weeks ago), but it
+should give developers an idea how to treat this issue.
+
+Finally I had to do some sort of project over the christmas holidays for my 
+eb Design course at university, so this topic came in handy.
+
+
+= Usage =
+When the page has been opened in a supported web browser, you should see a
+black region in the middle. This is the <canvas> element used to rener the
+scene. On the right there are several controls. The first one shows the
+current frames per second (FPS) as well as some WebGL related stuff.
+The second one is to select a bsp file from your local file system. You can
+either select a file or drag&drop it right on the control. The bsp file should
+be loaded, which might take some time (It takes my browser (Opera 12.00 alpha)
+roughly half a minute to load a bigger bsp file as parsing the binary file into
+an ArrayBuffer object currently takes very, very long.
+After loading the file is parsed (calculating texture/lightmap coordinates,
+loading lightmaps, prepare the buffers etc.) before it is finally displayed.
+You will usually only see the lightmaps, as most of the textures are stored
+externally in so-called wad files. The wad files referenced by the bsp file
+should be listed after the loading process. Please select them from your local
+file system or drag&drop them on the control. You can also load wad files
+before loading a bsp file and loaded wads will not be unloaded when changing
+the loaded bsp file.
+The last control on the right is the log window showing some information at
+startup and also reports errors.
+
+= Controls =
+Mouse:      You can use the mouse for looking around in the scene by pressing
+            the left mouse button and dragging the cursor inside the canvas.
+W           Move forward
+S           Move backward
+A           Move sidewards left (strafe)
+D           Move sidewards right (strafe)
+Space/Shift Move up
+Ctrl        Move down
+
+T           Enable/Disable texture rendering
+L           Enable/Disable lightmap rendering
+P           Toggle wireframe mode
+
+
+= Implementation =
+The implementation covers the following aspects:
+> Initializing a WebGL context.
+> Reading a binary file.
+> Reading all data structurs the bsp file contains.
+> Computing the texture coordinates which are NOT stored in the bsp file.
+> Loading textures direclty stored in the bsp file.
+> Computing the lightmap coordinates and dimensions and fetch them from the raw
+  lightmap data lump of the bsp file.
+> Reading and decompressing the Potentially Visible Set
+  (PVS or often called VIS).
+> Parsing all the geometry into buffer objects for later rendering.
+> Rendering the whole scene using the bsp tree for organisation and the PVS to
+  reduce the polygon count.
+> Reading textures from a wad archive.
+> Using shaders to render colors, textures, mix texture colors and perfom alpha
+  testing.
+> Providing an example of how to navigate through a 3D scene with keyboard and
+  mouse.

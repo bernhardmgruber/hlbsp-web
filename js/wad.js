@@ -148,7 +148,13 @@ Wad.prototype.loadTexture = function(texName)
 }
 
 /**
- * Static method
+ * Static method for fetching a texture at a given offset from a byte buffer.
+ * Reads the texture header and decodes the indexed image into a rgba image.
+ * Finally creates a OpenGL texture.
+ *
+ * @param src A BinaryFile object used to read data from.
+ * @param offset The offset in the binary file to start reading.
+ * @return Returns a WebGLTexture obtained by calling createTexture().
  */
 Wad.prototype.fetchTextureAtOffset = function(src, offset)
 {
@@ -224,6 +230,17 @@ Wad.prototype.fetchTextureAtOffset = function(src, offset)
 	return texture;
 }
 
+/**
+ * Translates the transparent regions of an image given by a selected "transparency color"
+ * into actual alpha values.
+ * Also performs color interpolation at the edges of transparent regions to prevent that the
+ * "transparency color" can be seen on the final texture.
+ *
+ * @param pixels An array of pixels (rgba) which will be altered.
+ * @param width The width of the image hold by pixels.
+ * @param height The height of the image hold by pixels.
+ * @param key* The "transparency color".
+ */
 Wad.prototype.applyAlphaSections = function(pixels, width, height, keyR, keyG, keyB)
 {
 	// Create an equally sized pixel buffer initialized to the key color 

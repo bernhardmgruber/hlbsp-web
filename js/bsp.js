@@ -22,7 +22,7 @@
 'use strict';
 
 /**
- * BSP singleton.
+ * BSP class.
  * Responsible for loading, storing and rendering the bsp tree.
  */
 function Bsp()
@@ -46,16 +46,17 @@ function Bsp()
     var models;
     var clipNodes;
 	
-	/** Array of Entity objects */
+	/** Array of Entity objects. @see Entity */
 	var entities;
 	
-	/** References to the entities that are brush entities */
+	/** References to the entities that are brush entities. Array of Entity references. */
 	var brushEntities;
 	
 	//
 	// Calculated
 	//
 	
+	/** Stores the missing wads for this bsp file */
 	var missingWads;
 
 	/** Array (for each face) of arrays (for each vertex of a face) of JSONs holding s and t coordinate. */
@@ -132,7 +133,7 @@ Bsp.prototype.traverseTree = function(pos, nodeIndex)
 }
 
 /**
- * Renders the complete level
+ * Renders the complete level.
  */
 Bsp.prototype.render = function(cameraPos)
 {
@@ -170,6 +171,12 @@ Bsp.prototype.render = function(cameraPos)
         this.renderBrushEntity(this.brushEntities[i], cameraPos);
 }
 
+/**
+ * Renders the given brush entity.
+ *
+ * @param entity An instance of Entity which is a brush entity (it must have a property "model").
+ * @param cameraPos The current camera position.
+ */
 Bsp.prototype.renderBrushEntity = function(entity, cameraPos)
 {
     // Model
@@ -243,6 +250,13 @@ Bsp.prototype.renderBrushEntity = function(entity, cameraPos)
 	modelviewMatrix.setUniform(gl, modelviewMatrixLocation, false);
 }
 
+/**
+ * Renders a node of the bsp tree. Called by Bsp.render().
+ *
+ * @param nodeIndex The index of the node to render.
+ * @param cameraLeaf The leaf the camera is in. Used for PVS.
+ * @param cameraPos The position of the camera.
+ */
 Bsp.prototype.renderNode = function(nodeIndex, cameraLeaf, cameraPos)
 {
     if (nodeIndex < 0)
@@ -294,6 +308,11 @@ Bsp.prototype.renderNode = function(nodeIndex, cameraLeaf, cameraPos)
     }
 }
 
+/**
+ * Renders a leaf of the bsp tree. Called by Bsp.renderNode().
+ *
+ * @param leafIndex The index of the leaf to render.
+ */
 Bsp.prototype.renderLeaf = function(leafIndex)
 {
 	var leaf = this.leaves[leafIndex];
@@ -303,6 +322,11 @@ Bsp.prototype.renderLeaf = function(leafIndex)
         this.renderFace(this.markSurfaces[leaf.firstMarkSurface + i]);
 }
 
+/**
+ * Renders a face of the bsp tree. Called by Bsp.renderLeaf().
+ *
+ * @param faceIndex The index of the face to render.
+ */
 Bsp.prototype.renderFace = function(faceIndex)
 {
 	var face = this.faces[faceIndex];
@@ -324,6 +348,9 @@ Bsp.prototype.renderFace = function(faceIndex)
 	gl.drawArrays(polygonMode ? gl.LINE_LOOP : gl.TRIANGLE_FAN, this.faceBufferRegions[faceIndex].start, this.faceBufferRegions[faceIndex].count);
 }
 
+/**
+ * Runs through all faces and generates the OpenGL buffers required for rendering.
+ */
 Bsp.prototype.preRender = function()
 {
 	var vertices = new Array();
@@ -421,9 +448,6 @@ Bsp.prototype.loadBSP = function(arrayBuffer)
     
     var src = new BinaryFile(arrayBuffer);
     
-	// ====================================================================================================
-	// =                                        Load file content                                         =
-	// ====================================================================================================
     if(!this.readHeader(src))
 		return false;
 		
@@ -440,15 +464,10 @@ Bsp.prototype.loadBSP = function(arrayBuffer)
     this.readModels(src);
     this.readClipNodes(src);
 	
-	this.loadEntities(src); // muast be loaded before textures
-	this.loadTextures(src); // plus coordinates
+	this.loadEntities(src);   // muast be loaded before textures
+	this.loadTextures(src);   // plus coordinates
 	this.loadLightmaps(src);  // plus coordinates
 	this.loadVIS(src);
-	
-
-	//this.loadDecals();
-	//this.loadSky();
-
 	
 	// FINALLY create buffers for rendering
 	this.preRender();
@@ -825,6 +844,9 @@ Bsp.prototype.readClipNodes = function(src)
     console.log('Read ' + this.clipNodes.length + ' ClipNodes');
 }
 
+/**
+ * Returns true if the given entity is a brush entity (an entity, that can be rendered directly as small bsp tree).
+ */
 Bsp.prototype.isBrushEntity = function(entity)
 {
     if (entity.properties.model == undefined)
@@ -847,6 +869,9 @@ Bsp.prototype.isBrushEntity = function(entity)
 	return true;
 }
 
+/**
+ * Loads and parses the entities from the entity lump.
+ */
 Bsp.prototype.loadEntities = function(src)
 {
 	src.seek(this.header.lumps[LUMP_ENTITIES].offset);
@@ -878,6 +903,12 @@ Bsp.prototype.loadEntities = function(src)
 	console.log('Read ' + this.entities.length + ' Entities (' + this.brushEntities.length + ' Brush Entities)');
 }
 
+/**
+ * Finds all entities that match the given classname.
+ *
+ * @param name The value of the classname property.
+ * @return Returns an array of Entity references to the found entities.
+ */
 Bsp.prototype.findEntities = function(name)
 {
 	var matches = new Array();
@@ -892,6 +923,9 @@ Bsp.prototype.findEntities = function(name)
 	return matches;
 }
 
+/**
+ * Loads and decompresses the PVS (Potentially Visible Set, or VIS for short) from the bsp file.
+ */
 Bsp.prototype.loadVIS = function(src)
 {
     if(this.header.lumps[LUMP_VISIBILITY].length > 0)
@@ -912,6 +946,9 @@ Bsp.prototype.loadVIS = function(src)
         console.log("No VIS found\n");
 }
 
+/**
+ * Counts the number of so-called VisLeaves (leafs that have VIS/PVS information) in the bsp file.
+ */
 Bsp.prototype.countVisLeaves = function(nodeIndex)
 {
     if (nodeIndex < 0)
@@ -931,6 +968,14 @@ Bsp.prototype.countVisLeaves = function(nodeIndex)
     return this.countVisLeaves(node.children[0]) + this.countVisLeaves(node.children[1]);
 }
 
+/**
+ * Retrieves the PVS for the given leaf.
+ *
+ * @param src Reference to an instance of BinaryFile representing the bsp file to read from.
+ * @param leafIndex Index of the leaf to retrieve the PVS for.
+ * @param visLeaves The number of VisLeaves as returned by Bsp.countVisLeaves().
+ * @return Returns an array of boolean values representing the visibility list for the given leaf.
+ */
 Bsp.prototype.getPVS = function(src, leafIndex, visLeaves)
 {
 	var list = new Array(this.leaves.length - 1);
@@ -987,6 +1032,9 @@ Bsp.prototype.loadTextureFromWad = function(name)
 	return texture;
 }
 
+/**
+ * Loads all the texture data from the bsp file and generates texture coordinates.
+ */
 Bsp.prototype.loadTextures = function(src)
 {
 	this.textureCoordinates = new Array();
@@ -1130,6 +1178,9 @@ Bsp.prototype.loadMissingTextures = function()
 	}
 }
 
+/**
+ * Updates the gui by the wad files needed by the bsp file but currently not loaded.
+ */
 Bsp.prototype.showMissingWads = function()
 {
 	this.missingWads = new Array();
@@ -1180,6 +1231,9 @@ Bsp.prototype.showMissingWads = function()
 	setTimeout($('#wadmissing').slideDown(300), 0);
 }
 
+/**
+ * Loads all the lightmaps from bsp file, generates textures and texture coordinates.
+ */
 Bsp.prototype.loadLightmaps = function(src)
 {
 	this.lightmapCoordinates = new Array();
@@ -1312,6 +1366,9 @@ Bsp.prototype.loadLightmaps = function(src)
     console.log('Loaded ' + loadedLightmaps + ' lightmaps, lightmapdatadiff: ' + (loadedData - this.header.lumps[LUMP_LIGHTING].length) + ' Bytes ');
 }
 
+/**
+ * Unloads all allocated data of the Bsp class. This should be mostly OpenGL releated stuff.
+ */
 Bsp.prototype.unload = function()
 {
 	// Free lightmap lookup
@@ -1330,4 +1387,5 @@ Bsp.prototype.unload = function()
 	gl.deleteBuffer(this.normalBuffer);
 };
 
+// create a global instance of the Bsp class.
 var bsp = new Bsp();

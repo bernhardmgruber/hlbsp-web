@@ -31,6 +31,10 @@ function Entity(entityString)
 	this.parseProperties(entityString);
 }
 
+/**
+ * Parses the string representation of an entity into an associative array.
+ * @see Bsp.loadEntities().
+ */
 Entity.prototype.parseProperties = function(entityString)
 {
 	this.properties = [];

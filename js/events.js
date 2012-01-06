@@ -25,6 +25,12 @@
 // bsp file
 //
 
+/**
+ * Handles the loading of a bsp file.
+ * Displays a loading bar and starts the parsing process by calling Bsp.loadBSP().
+ * 
+ * @param file A file obtained by a drag/drop event or file selection event.
+ */
 function handleBspFileLoading(file)
 {
 	// Remove previously loaded date and elements
@@ -68,12 +74,20 @@ function handleBspFileLoading(file)
 	reader.readAsArrayBuffer(file);
 }
 
+/**
+ * Handles the selection of a bsp file.
+ * Calls handleBspFileLoading().
+ */
 function handleBspFileSelection(event)
 {
 	var file = event.target.files[0];
 	handleBspFileLoading(file);
 }
 
+/**
+ * Handles the drag&drop of a bsp file.
+ * Calls handleBspFileLoading().
+ */
 function handleBspFileDrop(event)
 {
     event.stopPropagation();
@@ -83,6 +97,9 @@ function handleBspFileDrop(event)
 	handleBspFileLoading(file);
 }
 
+/**
+ * Displays a small information window when the user drags a bsp file over the control.
+ */
 function handleBspFileDragOver(event)
 {
     event.stopPropagation();
@@ -94,6 +111,12 @@ function handleBspFileDragOver(event)
 // wad file
 //
 
+/**
+ * Handles the loading of a wad file.
+ * Displays a loading bar and starts the parsing process by calling Wad.open().
+ * 
+ * @param files A FileList object obtained by a drag/drop event or file selection event.
+ */
 function handleWadFileLoading(files)
 {
 	for (var i = 0, file; file = files[i]; i++)
@@ -185,12 +208,20 @@ function handleWadFileLoading(files)
 	}
 }
 
+/**
+ * Handles the selection of a wad file.
+ * Calls handleWadFileLoading().
+ */
 function handleWadFileSelection(event)
 {
 	var files = event.target.files;
 	handleWadFileLoading(files);
 }
 
+/**
+ * Handles the drag&drop of a wad file.
+ * Calls handleWadFileLoading().
+ */
 function handleWadFileDrop(event)
 {
     event.stopPropagation();
@@ -201,21 +232,35 @@ function handleWadFileDrop(event)
 	handleWadFileLoading(files);
 }
 
+/**
+ * Displays a small information window when the user drags a bsp file over the control.
+ */
 function handleWadDragOver(event)
 {
     event.stopPropagation();
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy here to load'; 
+    event.dataTransfer.dropEffect = 'drop here to load'; 
 }
 
+//
 // SOME GLOBAL EVENT VARS
+//
+
+/** If set to true, polyons will be rendered wireframe */
 var polygonMode = false;
+
+/** If set to true, the coordinate system is shown */
 var showCoordSystem = false;
+
+/** If set to true, textures (not lightmaps) will be rendered */
 var renderTextures = true;
+
+/** If set to true, lightmaps will be rendered */
 var renderLightmaps = true;
 
 /**
- * This function is called when the document has finished loading and binds all event handlers to their corresponding objects.
+ * This function is called when the document has finished loading and
+ * binds all event handlers to their corresponding objects.
  */
 function setEventHandlers()
 {

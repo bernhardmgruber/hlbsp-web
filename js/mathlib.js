@@ -25,11 +25,24 @@
  * Provides basic mathematical routines for vector processing.
  */
  
+ /**
+  * Structure for representing a point (or vector) in 3D space.
+  */
 function Vector3D()
 {
 	var x;
 	var y;
 	var z;
+}
+
+/**
+ * Converts an angle in degrees to radians.
+ *
+ * @param degree An angle in degrees.
+ */
+function degToRad(degree)
+{
+	return degree / 180.0 * Math.PI;
 }
 
 /**
@@ -50,6 +63,9 @@ function pointInBox(point, mins, maxs)
         return false;
 }
 
+/**
+ * Returns the dot product of two vectors.
+ */
 function dotProduct(a, b)
 {
     return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);

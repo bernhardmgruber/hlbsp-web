@@ -21,21 +21,29 @@
 
 'use strict';
 
+/**
+ * Returns true, if the given value is a power of two.
+ */
 function isPowerOfTwo(x)
 {
     return (x & (x - 1)) == 0;
 }
  
+ /**
+  * Gets the next highest power of two for a given integer.
+  */
 function nextHighestPowerOfTwo(x)
 {
     --x;
-    for (var i = 1; i < 32; i <<= 1) {
+    for (var i = 1; i < 32; i <<= 1)
         x = x | x >> i;
-    }
     return x + 1;
 }
 
+/** Canvas used for the image conversion and scaling in pixelsToImage() */
 var conversionCanvas = document.createElement("canvas");
+
+/** Context to conversionCanvas */
 var conversionCtx = conversionCanvas.getContext("2d");
 
 /**

@@ -7,6 +7,7 @@ Last edited: January 5th 2010
 The author of this project is Bernhard Manfred Gruber,
 a 20 year old student at the
 Upper Austrian University of Applied Science in Hagenberg (Austria).
+Feel free to send me a mail at: dixxi1@gmx.net
 
 
 = About =
@@ -70,6 +71,7 @@ Ctrl        Move down
 T           Enable/Disable texture rendering
 L           Enable/Disable lightmap rendering
 P           Toggle wireframe mode
+C           Toggle coordinate system
 
 
 = Implementation =

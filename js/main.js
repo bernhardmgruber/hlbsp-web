@@ -25,16 +25,18 @@
 // =                                           Globals                                            =
 // ================================================================================================
 
-"use strict";
-
-// stores the time of the beginning of execution
+/** stores the time of the beginning of execution */
 var startTime;
 
-// global handle to the gl context
+/** Global handle to the gl context */
 var gl = null;  
     
+/** Number of log messages posted in the log control */
 var logcount = 0;
 
+/**
+ * Enumeration type for the different types of log messages.
+ */
 var LogType =
 {
 	'NORMAL' : 'normal',
@@ -43,9 +45,13 @@ var LogType =
 	'ERROR' : 'error'
 };
 
+/** The projection matrix */
 var projectionMatrix = new J3DIMatrix4();
+
+/** The modelview matrix */
 var modelviewMatrix = new J3DIMatrix4();
 
+/** Handle to the canvas element where the scene is draw */
 var canvas;
 
 /** Stores the global key states */
@@ -65,6 +71,12 @@ var mouse =
 // =                                          Functions                                           =
 // ================================================================================================
 
+/**
+ * Logs a message in the log window.
+ *
+ * @param message The message to show in the log window.
+ * @param type The type of message to log. @see LogType.
+ */
 function log(message, type)
 {
 	if(type == undefined)
@@ -165,6 +177,13 @@ function initWebGL()
 	}
 }
 
+/**
+ * Reads a shader from the given DOM element's id.
+ *
+ * @param gl Handle to the OpenGL context.
+ * @param id DOM id of element where the shader's source is stored.
+ * @return Returns the OpenGL identifier of the shader obtained by calling createShader().
+ */
 function getShader(gl, id)
 {  
     var shaderScript, theSource, currentChild, shader;  

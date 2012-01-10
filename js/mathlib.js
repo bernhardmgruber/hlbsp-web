@@ -84,6 +84,14 @@ function vectorMul(v, s)
 }
 
 /**
+ * Checks whether or not two vectors are equal.
+ */
+function vectorEquals(a, b)
+{
+	return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
+}
+
+/**
  * Returns the dot product of two vectors.
  */
 function dotProduct(a, b)

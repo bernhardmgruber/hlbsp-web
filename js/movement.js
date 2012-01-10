@@ -67,7 +67,7 @@ function Trace()
  */
 function traceLine(start, end)
 {
-    if(start == end)
+    if(vectorEquals(start, end))
         return end; // no move
 
     // create a default trace
@@ -90,7 +90,7 @@ function traceLine(start, end)
 
         // Get the distance vector from the wanted end point to the actual new position 
 		// The distance we have to travel backward from the original end position to the collision point)
-        var missingMove = vectorSzb(end, newPosition);
+        var missingMove = vectorSub(end, newPosition);
 
         // Get the distance we need to travel backwards from the end position to the new slide position.
 		// (The position we arrive when we collide with a plane and slide along it with the remaining momentum)
@@ -102,7 +102,7 @@ function traceLine(start, end)
 
         // Since we got a new position after sliding, we need to make sure
         // that the new sliding position doesn't collide with anything else.
-        newPosition = traceLine(vNewPosition, vEndPosition);
+        newPosition = traceLine(newPosition, endPosition);
 
         // Return the new position
         return newPosition;
@@ -122,11 +122,7 @@ function hullPointContents(nodeIndex, point)
         var node = bsp.clipNodes[nodeIndex];
         var plane = bsp.planes[node.plane];
 		
-		var d;
-        if (plane.nType < 3)
-            d = plane[plane.type] - plane.dist;
-        else
-			d = dotProduct(plane.normal, point) - plane.dist;
+		var d = dotProduct(plane.normal, point) - plane.dist;
 			
         if (d < 0)
             nodeIndex = node.children[1];
@@ -166,16 +162,8 @@ function recursiveHullCheck(nodeIndex, startFraction, endFraction, startPoint, e
 
     var t1, t2;
 
-    if (plane.type < 3)
-    {
-        t1 = startPoint[plane.type] - plane.dist;
-        t2 = endPoint[plane.type] - plane.dist;
-    }
-    else
-    {
-        t1 = dotProduct(plane.normal, startPoint) - plane.dist;
-        t2 = dotProduct(plane.normal, endPoint) - plane.dist;
-    }
+    t1 = dotProduct(plane.normal, startPoint) - plane.dist;
+    t2 = dotProduct(plane.normal, endPoint) - plane.dist;
 
     if (t1 >= 0.0 && t2 >= 0.0)
         return recursiveHullCheck(node.children[0], startFraction, endFraction, startPoint, endPoint, trace);
@@ -215,11 +203,12 @@ function recursiveHullCheck(nodeIndex, startFraction, endFraction, startPoint, e
         trace.plane = plane;
     else
     {
+		trace.plane = new BspPlane();
         trace.plane.normal = vectorMul(plane.normal, -1);
         trace.plane.dist = -plane.dist;
     }
 
-    while(hullPointContents(g_bsp.models[0].headNodes[hull], midPoint) == CONTENTS_SOLID)
+    while(hullPointContents(bsp.models[0].headNodes[hull], midPoint) == CONTENTS_SOLID)
     {
         // shouldn't really happen, but does occasionally
         frac -= 0.1;

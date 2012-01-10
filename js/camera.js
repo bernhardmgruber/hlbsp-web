@@ -154,6 +154,9 @@ Camera.prototype.update = function(interval)
 		newPos.y += Math.sin(degToRad(this.yaw - 90.0)) * moveFactor;
 	}
 	
+	//oldPos = {x: 0, y: 0, z: 0};
+	//newPos = {x: 1000, y: 0, z: 0};
+	
 	if(bsp.loaded)
 		this.pos = playerMove(oldPos, newPos);
 	else

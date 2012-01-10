@@ -111,15 +111,17 @@ Camera.prototype.update = function(interval)
 	}
 
 	var moveFactor = this.moveSens * interval;
+	var oldPos = new Vector3D(this.pos);
+	var newPos = new Vector3D(this.pos);
 
 	if (keys[16] || keys[32]) // SHIFT or SPACE - UP
 	{
-		this.pos.z += moveFactor;
+		newPos.z += moveFactor;
 	}
 
 	if (keys[17]) // CRTL - DOWN
 	{
-		this.pos.z -= moveFactor;
+		newPos.z -= moveFactor;
 	}
 
 	// If strafing and moving reduce speed to keep total move per frame constant
@@ -130,27 +132,32 @@ Camera.prototype.update = function(interval)
 	
 	if (keys[87]) // W - FORWARD
 	{
-		this.pos.x += Math.cos(degToRad(this.yaw)) * moveFactor;
-		this.pos.y += Math.sin(degToRad(this.yaw)) * moveFactor;
+		newPos.x += Math.cos(degToRad(this.yaw)) * moveFactor;
+		newPos.y += Math.sin(degToRad(this.yaw)) * moveFactor;
 	}
 
 	if (keys[83]) // S - BACKWARD
 	{
-		this.pos.x -= Math.cos(degToRad(this.yaw)) * moveFactor;
-		this.pos.y -= Math.sin(degToRad(this.yaw)) * moveFactor;
+		newPos.x -= Math.cos(degToRad(this.yaw)) * moveFactor;
+		newPos.y -= Math.sin(degToRad(this.yaw)) * moveFactor;
 	}
 
 	if (keys[65]) // A - LEFT
 	{
-		this.pos.x += Math.cos(degToRad(this.yaw + 90.0)) * moveFactor;
-		this.pos.y += Math.sin(degToRad(this.yaw + 90.0)) * moveFactor;
+		newPos.x += Math.cos(degToRad(this.yaw + 90.0)) * moveFactor;
+		newPos.y += Math.sin(degToRad(this.yaw + 90.0)) * moveFactor;
 	}
 
 	if (keys[68]) // D - RIGHT
 	{
-		this.pos.x += Math.cos(degToRad(this.yaw - 90.0)) * moveFactor;
-		this.pos.y += Math.sin(degToRad(this.yaw - 90.0)) * moveFactor;
+		newPos.x += Math.cos(degToRad(this.yaw - 90.0)) * moveFactor;
+		newPos.y += Math.sin(degToRad(this.yaw - 90.0)) * moveFactor;
 	}
+	
+	if(bsp.loaded)
+		this.pos = playerMove(oldPos, newPos);
+	else
+		this.pos = newPos;
 	
 	//console.log('camera.update() pos: ' + this.pos.x + 'x ' + this.pos.y + 'y ' + this.pos.z + 'z pitch: ' + this.pitch + ' yaw: ' + this.yaw);
 }

@@ -21,18 +21,74 @@
 
 'use strict';
 
-/**
- * Provides basic mathematical routines for vector processing.
- */
+//
+// Provides basic mathematical routines for vector processing.
+//
+ 
+ /** Defines the epsilon used for collision detection */
+var EPSILON = 0.03125 // 1/32
  
  /**
   * Structure for representing a point (or vector) in 3D space.
+  *
+  * @param v Optional. An instance of Vector3D to copy.
   */
-function Vector3D()
+function Vector3D(v)
 {
 	var x;
 	var y;
 	var z;
+	
+	if(v != undefined)
+	{
+		this.x = v.x;
+		this.y = v.y;
+		this.z = v.z;
+	}
+}
+
+/**
+ * Vector addition.
+ */
+function vectorAdd(a, b)
+{
+	var result = new Vector3D();
+	result.x = a.x + b.x;
+	result.y = a.y + b.y;
+	result.z = a.z + b.z;
+	return result;
+}
+
+/**
+ * Vector subtraction.
+ */
+function vectorSub(a, b)
+{
+	var result = new Vector3D();
+	result.x = a.x - b.x;
+	result.y = a.y - b.y;
+	result.z = a.z - b.z;
+	return result;
+}
+
+/**
+ * Multiplies a vector with a scalar.
+ */
+function vectorMul(v, s)
+{
+	var result = new Vector3D(v);
+	result.x *= s;
+	result.y *= s;
+	result.z *= s;
+	return result;
+}
+
+/**
+ * Returns the dot product of two vectors.
+ */
+function dotProduct(a, b)
+{
+    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
 }
 
 /**
@@ -61,12 +117,4 @@ function pointInBox(point, mins, maxs)
         return true;
     else
         return false;
-}
-
-/**
- * Returns the dot product of two vectors.
- */
-function dotProduct(a, b)
-{
-    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
 }

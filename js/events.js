@@ -45,7 +45,7 @@ function handleBspFileLoading(file)
 	{
 		$('#bsploading p:first-child').html('Loading ' + file.name + ' ...');
 		$('#bsploading').slideDown(300);
-	}
+	};
 	
 	reader.onprogress = function(event)
 	{
@@ -55,7 +55,7 @@ function handleBspFileLoading(file)
 			$('#bsploading progress')[0].value = value;
 			$('#bsploading p:last-child').html('Reading ... (' + value + '%)');
 		}
-	}
+	};
 	
 	reader.onload = function(event)
 	{
@@ -68,7 +68,19 @@ function handleBspFileLoading(file)
 			setTimeout("$('#bsploading').slideUp(300)", 2000);
 		}
 		else
-			$('#bsploading p:last-child').html('Error loading bsp file');
+			$('#bsploading p:last-child').html('Error parsing bsp file');
+	};
+	
+	reader.onerror = function(event)
+	{
+		$('#bsploading').slideDown(300);
+		var error;
+		for(var member in event.target.error)
+			if(event.target.error[member] == event.target.error.code)
+				error = member;
+		$('#bsploading p:first-child').html('<span class="error">Error reading ' + file.name + ': ' + event.target.error.code + ' - ' + error + '</span>');
+		console.log(event.target.error);
+		setTimeout("$('#bsploading').slideUp(300)", 3500);
 	};
 
 	reader.readAsArrayBuffer(file);
@@ -142,7 +154,7 @@ function handleWadFileLoading(files)
 			control.find('p:first-child').html('Loading ' + name + ' ...')
 			control.slideDown(300);
 			//$('.wadloading[name="' + name + '"] p:first-child').html('Loading ' + name + ' ...').slideDown(300);
-		}
+		};
 		
 		reader.onprogress = function(event)
 		{
@@ -155,7 +167,7 @@ function handleWadFileLoading(files)
 				control.find('p:last-child').html('Reading ... (' + value + '%)');
 				//$('.wadloading[name="' + name + '"] p:last-child').html('Loading ... (' + value + '%)');
 			}
-		}
+		};
 		
 		reader.onload = function(event)
 		{
@@ -202,6 +214,18 @@ function handleWadFileLoading(files)
 			}
 			else
 				control.find('p:last-child').html('Error loading wad file');
+		};
+		
+		reader.onerror = function(event)
+		{
+			control.slideDown(300);
+			var error;
+			for(var member in event.target.error)
+				if(event.target.error[member] == event.target.error.code)
+					error = member;
+			control.find('p:first-child').html('<span class="error">Error reading ' + file.name + ': ' + event.target.error.code + ' - ' + error + '</span>');
+			console.log(event.target.error);
+			setTimeout("$('.wadloading').filter(function() { if($(this).attr('data-name') == '" + name + "') return true; else return false; }).slideUp(300)", 3500);
 		};
 
 		reader.readAsArrayBuffer(file);

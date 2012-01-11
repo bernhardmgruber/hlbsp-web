@@ -345,7 +345,7 @@ Bsp.prototype.renderFace = function(faceIndex)
 	gl.bindTexture(gl.TEXTURE_2D, this.lightmapLookup[faceIndex]);
 
 
-	gl.drawArrays(polygonMode ? gl.LINE_LOOP : gl.TRIANGLE_FAN, this.faceBufferRegions[faceIndex].start, this.faceBufferRegions[faceIndex].count);
+	gl.drawArrays(polygonMode ? gl.LINE_STRIP : gl.TRIANGLE_FAN, this.faceBufferRegions[faceIndex].start, this.faceBufferRegions[faceIndex].count);
 }
 
 /**

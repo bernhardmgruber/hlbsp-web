@@ -342,8 +342,8 @@ function setEventHandlers()
 	}
 	
 	document.getElementById('bspfile').addEventListener('change', handleBspFileSelection, false);
-	document.getElementById('bsploading').addEventListener('dragover', handleBspFileDragOver, false);
-	document.getElementById('bsploading').addEventListener('drop', handleBspFileDrop, false);
+	document.getElementById('bspselection').addEventListener('dragover', handleBspFileDragOver, false);
+	document.getElementById('bspselection').addEventListener('drop', handleBspFileDrop, false);
 	document.getElementById('wadfiles').addEventListener('change', handleWadFileSelection, false);
 	document.getElementById('wads').addEventListener('dragover', handleWadDragOver, false);
 	document.getElementById('wads').addEventListener('drop', handleWadFileDrop, false);

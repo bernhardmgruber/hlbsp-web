@@ -28,8 +28,8 @@
 /** stores the time of the beginning of execution */
 var startTime;
 
-/** Global handle to the gl context */
-var gl = null;  
+/** Global handle to the gl context of the canvas */
+var gl = null; 
     
 /** Number of log messages posted in the log control */
 var logcount = 0;
@@ -501,7 +501,3 @@ function main()
 
 // GET THE BALL ROLLING
 window.addEventListener('load', main, false);
-
-
-
-	

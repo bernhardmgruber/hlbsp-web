@@ -299,14 +299,14 @@ function setEventHandlers()
 	};
 
 	// Event handler for updating the current mouse position in camera.
-	canvas.onmousemove = function(event)
+	document.onmousemove = function(event)
 	{
 		mouse.x = event.pageX;
 		mouse.y = event.pageY;
 	};
 
 	// Event handler for mouse down to enable mouse tracking.
-	document.onmousedown = function()
+	canvas.onmousedown = function()
 	{
 		camera.beginCapture();
 	}

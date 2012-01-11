@@ -102,7 +102,7 @@ function checkRequiredAPI()
 		log('FileReader API is supported', LogType.SUCCESS);
 	else
 	{
-		log('Sorry: Your browser does not support the FileReader API. No BSP files can be loaded!', LogType.ERROR);
+		log('FileReader API is not supported. No BSP files can be loaded!', LogType.ERROR);
 		return false;
 	}
 	
@@ -110,7 +110,7 @@ function checkRequiredAPI()
 		log('ArrayBuffer API is supported', LogType.SUCCESS);
 	else
 	{
-		log('Sorry: Your browser does not support the ArrayBuffer API. No BSP files can be loaded!', LogType.ERROR);
+		log('ArrayBuffer API is not supported. No BSP files can be loaded!', LogType.ERROR);
 		return false;
 	}
 	
@@ -120,10 +120,7 @@ function checkRequiredAPI()
 	if (window.DataView)
 		log('DataView API is supported', LogType.SUCCESS);
 	else
-	{
-		log('Sorry: Your browser does not support the DataView API. No BSP files can be loaded!', LogType.ERROR);
-		return false;
-	}
+		log('DataView API is not supported. Parsing files may take longer!', LogType.WARNING);
 	
 	return true;
 }

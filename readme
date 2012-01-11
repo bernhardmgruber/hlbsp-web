@@ -1,6 +1,6 @@
 === hlbsp viewer ===
 
-Last edited: January 5th 2010
+Last edited: January 11th 2010
 
 
 = Author =
@@ -93,3 +93,11 @@ The implementation covers the following aspects:
   testing.
 > Providing an example of how to navigate through a 3D scene with keyboard and
   mouse.
+
+  
+= Known issues =
+> Opera does not support drag&drop.
+> When using Chrome, you have to start the browser with the
+  --allow-file-access-from-files
+  command line flag in order to allow reading local files.
+> Internet Explorer is NOT supported (does not support WebGL).

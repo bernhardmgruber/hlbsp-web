@@ -30,7 +30,7 @@
 function BinaryFile(arrayBuffer)
 {
 	this.buffer = arrayBuffer;
-	this.view = new DataView(this.buffer);
+	this.view = new jDataView(this.buffer); // we use the jDataView wrapper class here to provide backward compability
 	this.offset = 0;
 };
 

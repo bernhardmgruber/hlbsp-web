@@ -69,8 +69,11 @@ Camera.prototype.beginCapture = function()
  */
 Camera.prototype.endCapture = function()
 {
-	this.captureMouse = false;
-	console.log('end capture');
+	if(this.captureMouse)
+	{
+		this.captureMouse = false;
+		console.log('end capture');
+	}
 }
 	
 /**

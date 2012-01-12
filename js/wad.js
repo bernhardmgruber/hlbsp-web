@@ -176,8 +176,8 @@ Wad.prototype.fetchTextureAtOffset = function(src, offset)
 	var palette = new Uint8Array(src.buffer, offset + paletteOffset, 256 * 3);
 
 	// Generate texture
-	var texture = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, texture);
+	//var texture = gl.createTexture();
+	//gl.bindTexture(gl.TEXTURE_2D, texture);
 
     //for (var i = 0; i < MIPLEVELS; i++) // ONLY LOAD FIRST MIPLEVEL !!!
     {   
@@ -210,22 +210,26 @@ Wad.prototype.fetchTextureAtOffset = function(src, offset)
 		}
 		
 		// Upload the data to OpenGL
-		var img = pixelsToImage(textureData, width, height, 4);
+		//var img = pixelsToImage(textureData, width, height, 4);
 		
 		//$('body').append('<span>Texture (' + img.width + 'x' + img.height + ')</span>').append(img);
 		
-		gl.texImage2D(gl.TEXTURE_2D, 0 /*i*/, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+		//gl.texImage2D(gl.TEXTURE_2D, 0 /*i*/, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
     }
 	
-	// Configure texture
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-	gl.generateMipmap(gl.TEXTURE_2D);
-	//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, MIPLEVELS - 1);
+	var texture = pixelsToTexture(textureData, width, height, 4, function(texture, image)
+	{
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+		gl.texImage2D(gl.TEXTURE_2D, 0 , gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+		gl.generateMipmap(gl.TEXTURE_2D);
+		gl.bindTexture(gl.TEXTURE_2D, null);
+	});
 	
-	gl.bindTexture(gl.TEXTURE_2D, null);
+
 	
 	return texture;
 }

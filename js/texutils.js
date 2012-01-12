@@ -55,11 +55,13 @@ var conversionCtx = conversionCanvas.getContext("2d");
  * @param channels The number of channels. Must be 3 (RGB) or 4 (RGBA).
  * @return Returns a new Image object containing the given data.
  */
-function pixelsToImage(pixelArray, width, height, channels)
+function pixelsToTexture(pixelArray, width, height, channels, callback)
 {
 	conversionCanvas.width = width;
 	conversionCanvas.height = height;
 	//var ctx = conversionCanvas.getContext("2d");
+	
+	var texture = gl.createTexture();
 	
 	//
 	// Convert
@@ -86,27 +88,47 @@ function pixelsToImage(pixelArray, width, height, channels)
 	var img = new Image(); 
 	img.width = width;
 	img.height = height;  
+	
+	img.onload = function(img)
+	{
+		return function()
+		{
+			//
+			// Scale
+			//
+			
+			if (!isPowerOfTwo(img.width) || !isPowerOfTwo(img.height))
+			{
+				// Scale up the texture to the next highest power of two dimensions.
+				conversionCanvas.width = nextHighestPowerOfTwo(img.width);
+				conversionCanvas.height = nextHighestPowerOfTwo(img.height);
+				//var ctx = conversionCanvas.getContext("2d");
+				conversionCtx.drawImage(img, 0, 0, conversionCanvas.width, conversionCanvas.height);
+				
+				img = new Image();
+				img.width = conversionCanvas.width;
+				img.height = conversionCanvas.height;  
+				
+				img.onload = function(img)
+				{
+					return function()
+					{
+						callback(texture, img);
+					};
+				}(img);
+				
+				img.src = conversionCanvas.toDataURL(); 
+			}
+			else
+				callback(texture, img);
+		};
+	}(img);
+	
 	img.src = conversionCanvas.toDataURL();
 	//$('body').append('<span>Texture (' + img.width + 'x' + img.height + ')</span>').append(img);
 	
-	//
-	// Scale
-	//
-	
-	if (!isPowerOfTwo(img.width) || !isPowerOfTwo(img.height))
-	{
-		// Scale up the texture to the next highest power of two dimensions.
-		conversionCanvas.width = nextHighestPowerOfTwo(img.width);
-		conversionCanvas.height = nextHighestPowerOfTwo(img.height);
-		//var ctx = conversionCanvas.getContext("2d");
-		conversionCtx.drawImage(img, 0, 0, conversionCanvas.width, conversionCanvas.height);
-		
-		img = new Image();
-		img.width = conversionCanvas.width;
-		img.height = conversionCanvas.height;  
-		img.src = conversionCanvas.toDataURL(); 
-	}
+
 	//$('body').append('<span>Texture (' + img.width + 'x' + img.height + ')</span>').append(img);
 	
-	return img;
+	return texture;
 }

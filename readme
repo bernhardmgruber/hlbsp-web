@@ -47,7 +47,7 @@ either select a file or drag&drop it right on the control. The bsp file should
 be loaded, which might take some time (It takes my browser (Opera 12.00 alpha)
 roughly half a minute to load a bigger bsp file as parsing the binary file into
 an ArrayBuffer object currently takes very, very long.
-After loading the file is parsed (calculating texture/lightmap coordinates,
+After loading, the file is parsed (calculating texture/lightmap coordinates,
 loading lightmaps, prepare the buffers etc.) before it is finally displayed.
 You will usually only see the lightmaps, as most of the textures are stored
 externally in so-called wad files. The wad files referenced by the bsp file
@@ -93,6 +93,7 @@ The implementation covers the following aspects:
   testing.
 > Providing an example of how to navigate through a 3D scene with keyboard and
   mouse.
+> Collision detection.
 
   
 = Known issues =
@@ -101,3 +102,7 @@ The implementation covers the following aspects:
   --allow-file-access-from-files
   command line flag in order to allow reading local files.
 > Internet Explorer is NOT supported (does not support WebGL).
+> As textures are loaded on the onload event of their images, they might not be
+  visible yet the bsp file has finished parsing. Be patient, this may take
+  several seconds for the onload threads (may be several thousands) to
+  finish.

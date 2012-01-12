@@ -221,7 +221,7 @@ Bsp.prototype.renderBrushEntity = function(entity, cameraPos)
 		case RENDER_MODE_ADDITIVE:
 			gl.uniform1f(alphaLocation, alpha / 255.0);
 			gl.enable(gl.BLEND);
-			glBlendFunc(gl.ONE, gl.ONE);
+			gl.blendFunc(gl.ONE, gl.ONE);
 			gl.depthMask(false); // make z buffer readonly
 
 			break;
